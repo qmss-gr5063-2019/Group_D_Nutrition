@@ -1,6 +1,6 @@
 ---
 title: "Final Project"
-author: "Cherie Yu"
+author: "Cherie Yu", "Qinyao Xia", "Allison Jiang"
 date: "4/22/2019"
 output: html_document
 ---
