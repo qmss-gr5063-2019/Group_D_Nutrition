@@ -115,20 +115,20 @@ data_nation <- data %>%
   select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
          Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)
 
-data_natoin_ob <- data_nation %>%
+data_nation_ob <- data_nation %>%
   filter(QuestionID == "Q036" & Total == "Total")
 
-plot4 <- ggplot(data = data_natoin_ob, aes(x=YearStart, y=Data_Value)) +
+plot4 <- ggplot(data = data_nation_ob, aes(x=YearStart, y=Data_Value)) +
   geom_line()+labs(x = "Year",y = "Percentage of obesity",
                    title = "Percentage of obesity in the US over time")
 ggplotly(plot4)
 ```
 
 ```{r}
-data_natoin_ob_gender <- data_nation %>%
+data_nation_ob_gender <- data_nation %>%
   filter(QuestionID == "Q036" & !is.na(Gender))
 
-plot5 <- ggplot(data = data_natoin_ob_gender, aes(x=YearStart, y=Data_Value,
+plot5 <- ggplot(data = data_nation_ob_gender, aes(x=YearStart, y=Data_Value,
                                                   group=Gender)) +
   geom_line(aes(color=Gender))+
   labs(x = "Year",y = "Percentage of obesity",
@@ -137,10 +137,10 @@ ggplotly(plot5)
 ```
 
 ```{r}
-data_natoin_ob_edu <- data_nation %>%
+data_nation_ob_edu <- data_nation %>%
   filter(QuestionID == "Q036" & !is.na(Education))
 
-plot6 <- ggplot(data = data_natoin_ob_edu, aes(x=YearStart, y=Data_Value,
+plot6 <- ggplot(data = data_nation_ob_edu, aes(x=YearStart, y=Data_Value,
                                                   group=Education)) +
   geom_line(aes(color=Education))+
   labs(x = "Year",y = "Percentage of obesity",
@@ -150,10 +150,10 @@ ggplotly(plot6)
 ```
 
 ```{r}
-data_natoin_ob_age <- data_nation %>%
+data_nation_ob_age <- data_nation %>%
   filter(QuestionID == "Q036" & !is.na(`Age(years)`))
 
-plot7 <- ggplot(data = data_natoin_ob_age, aes(x=YearStart, y=Data_Value,
+plot7 <- ggplot(data = data_nation_ob_age, aes(x=YearStart, y=Data_Value,
                                                   group=`Age(years)`)) +
   geom_line(aes(color=`Age(years)`))+
   labs(x = "Year",y = "Percentage of obesity",
@@ -163,10 +163,10 @@ ggplotly(plot7)
 ```
 
 ```{r}
-data_natoin_ob_inc <- data_nation %>%
+data_nation_ob_inc <- data_nation %>%
   filter(QuestionID == "Q036" & !is.na(Income))
 
-plot8 <- ggplot(data = data_natoin_ob_inc, aes(x=YearStart, y=Data_Value,
+plot8 <- ggplot(data = data_nation_ob_inc, aes(x=YearStart, y=Data_Value,
                                                   group=Income)) +
   geom_line(aes(color=Income))+
   labs(x = "Year",y = "Percentage of obesity",
@@ -176,10 +176,10 @@ ggplotly(plot8)
 ```
 
 ```{r}
-data_natoin_ob_race <- data_nation %>%
+data_nation_ob_race <- data_nation %>%
   filter(QuestionID == "Q036" & !is.na(`Race/Ethnicity`))
 
-plot9 <- ggplot(data = data_natoin_ob_race, aes(x=YearStart, y=Data_Value,
+plot9 <- ggplot(data = data_nation_ob_race, aes(x=YearStart, y=Data_Value,
                                                   group=`Race/Ethnicity`)) +
   geom_line(aes(color=`Race/Ethnicity`))+
   labs(x = "Year",y = "Percentage of obesity",
@@ -242,5 +242,106 @@ plot12 <- ggplot(data_ob_edu[1:40,],aes(x = reorder(LocationDesc,Data_Value),
   coord_flip() +
   facet_wrap("Education")
 ggplotly(plot12)
+```
+
+```{r}
+data_nation_ac <- data_nation %>%
+  filter(QuestionID == "Q043" & Total == "Total")
+
+plot13 <- ggplot(data = data_nation_ac, aes(x=YearStart, y=Data_Value)) +
+  geom_line()+labs(x = "Year",y = "Percentage of adults who achieve physical activities",
+                   title = "Percent of adults who achieve at least 150 minutes a week 
+                   of moderate-intensity aerobic physical activity or 75 minutes a 
+                   week of vigorous-intensity aerobic activity (or an equivalent 
+                   combination) ")
+ggplotly(plot13)
+```
+
+```{r}
+data_nation_ac_gender <- data_nation %>%
+  filter(QuestionID == "Q043" & !is.na(Gender))
+
+plot14 <- ggplot(data = data_nation_ac_gender, aes(x=YearStart, y=Data_Value,
+                                                  group=Gender)) +
+  geom_line(aes(color=Gender))+
+  labs(x = "Year",y = "Percentage of obesity",
+       title = "Percentage of adults who do physical activities") 
+ggplotly(plot14)
+```
+
+```{r}
+data_nation_ac_edu <- data_nation %>%
+  filter(QuestionID == "Q043" & !is.na(Education))
+
+plot15 <- ggplot(data = data_nation_ac_edu, aes(x=YearStart, y=Data_Value,
+                                                  group=Education)) +
+  geom_line(aes(color=Education))+
+  labs(x = "Year",y = "Percentage of obesity",
+       title = "Percentage of adults who do physical activities")  + 
+  scale_color_brewer(palette="Blues")
+ggplotly(plot15)
+```
+
+```{r}
+data_ac <- data %>%
+  filter(QuestionID == "Q043" & YearStart == 2013) %>%
+  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
+         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
+  filter(Total == "Total")
+
+
+plot16 <- ggplot(data_ac[1:20,],aes(x = reorder(LocationDesc,Data_Value),
+                                    y = Data_Value,fill = Data_Value)) +
+  geom_bar(stat = 'identity') +
+  geom_label(aes(label = Data_Value)) +
+  theme_minimal(8) +
+  labs(x = "State", y = "Percentage of adults who do physical activities",title = "Top 20 state in the percentage of adults who do physical activities in 2013") +
+  scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
+  guides(fill = FALSE) +
+  coord_flip()
+ggplotly(plot16)
+```
+
+```{r}
+data_ve <- data %>%
+  filter(QuestionID == "Q019" & YearStart == 2017) %>%
+  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
+         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
+  filter(Total == "Total")
+
+
+plot17 <- ggplot(data_ve[1:20,],aes(x = reorder(LocationDesc,Data_Value),
+                                    y = Data_Value,fill = Data_Value)) +
+  geom_bar(stat = 'identity') +
+  geom_label(aes(label = Data_Value)) +
+  theme_minimal(8) +
+  labs(x = "State", y = "Percent of adults who report consuming 
+                   vegetables less than one time daily",
+title = "Top 20 state in the percentage of obesity adults who report 
+consuming vegetables less than one time daily in 2017") +
+  scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
+  guides(fill = FALSE) +
+  coord_flip()
+ggplotly(plot17)
+```
+
+```{r}
+data_ve_edu <- data %>%
+  filter(QuestionID == "Q019" & YearStart == 2017) %>%
+  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
+         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
+  filter(!is.na(Education))
+
+plot18 <- ggplot(data_ve_edu[1:40,],aes(x = reorder(LocationDesc,Data_Value),
+                                    y = Data_Value,fill = Data_Value)) +
+  geom_bar(stat = 'identity') +
+  geom_label(aes(label = Data_Value)) +
+  theme_minimal(8) +
+  labs(x = "State", y = "Percentage of obesity",title = "Top 20 state in the percentage of obesity in 2014 by education") +
+  scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
+  guides(fill = FALSE) +
+  coord_flip() +
+  facet_wrap("Education")
+ggplotly(plot18)
 ```
 
