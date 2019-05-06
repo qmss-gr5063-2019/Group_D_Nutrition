@@ -560,6 +560,313 @@ map8
 ```
 
 ```{r}
+#Text Data
+#Obesity Tweets
+library(stringi)
+library(dplyr)
+obesity_tweets<-readRDS("obesity_tweets.RDS")
+obtweets_location<-with(obesity_tweets, ifelse(place_type=="city", stri_sub(place_full_name, -2, -1), place_full_name))
+obtweets_location[c(3, 5)]<-"FL"
+obtweets_location[c(22, 23, 114, 115)]<-"PA"
+obtweets_location[c(33)]<-"NC"
+obtweets_location[35]<-"AK"
+obtweets_location[41]<-"MT"
+obtweets_location[48]<-"WV"
+obtweets_location[c(74, 75, 87)]<-"NY"
+obtweets_location[88]<-"NJ"
+obtweets_location[c(91)]<-"CO"
+obtweets_location[c(129)]<-"CA"
+obtweets_location[c(120, 121)]<-"KS"
+obtweets_location[128]<-"TN"
+obtweets_full<-cbind(obesity_tweets, obtweets_location)
+colnames(obtweets_full)[89]<-"place_abbr"
 
+diet_tweets<-readRDS("diet_tweets.RDS")
+diet_location<-with(diet_tweets, ifelse(place_type=="city", stri_sub(place_full_name, -2, -1), place_full_name))
+diet_location[1]<-"NC"
+diet_location[2]<-"MS"
+diet_location[c(7, 62, 101)]<-"FL"
+diet_location[9]<-"KY"
+diet_location[26]<-"OK"
+diet_location[29]<-"AR"
+diet_location[33]<-"PA"
+diet_location[c(39, 86)]<-"SC"
+diet_location[47]<-"MT"
+diet_location[56]<-"CO"
+diet_location[70]<-"WV"
+diet_location[83]<-"IN"
+diet_location[85]<-"OH"
+diet_location[c(89, 90)]<-"NV"
+diet_location[92]<-"KS"
+diettweets_full<-cbind(diet_tweets, diet_location)
+colnames(diettweets_full)[89]<-"place_abbr"
+
+```
+
+```{r}
+fastfood_tweets<-readRDS("fastfood_tweets.RDS")
+fftweets_location<-with(fastfood_tweets, ifelse(place_type=="city", stri_sub(place_full_name, -2, -1), place_full_name))
+fftweets_location[c(2)]<-"CA"
+fftweets_location[5]<-"WI"
+fftweets_location[c(28)]<-"PA"
+fftweets_location[29]<-"NV"
+fftweets_full<-cbind(fastfood_tweets, fftweets_location)
+colnames(fftweets_full)[89]<-"place_abbr"
+```
+
+```{r}
+#sentiment analysis of fastfood text 
+library(tidytext)
+library(dplyr)
+library(stringr)
+fftweets_words<-tibble(id=fftweets_full$place_abbr, text=fftweets_full$text)
+remove_reg <- "&amp;|&lt;|&gt;"
+tidy_fftweets <- fftweets_words %>% 
+  filter(!str_detect(text, "^RT")) %>%
+  mutate(text = str_remove_all(text, remove_reg)) %>%
+  unnest_tokens(word, text, token = "tweets") %>%
+  filter(!word %in% stop_words$word,
+         !word %in% str_remove_all(stop_words$word, "'"),
+         str_detect(word, "[a-z]"))
+tidyfftwets2<-gsub("^#?", "", tidy_fftweets$word)
+tidyfftwets3<-cbind(tidy_fftweets, tidyfftwets2)
+colnames(tidyfftwets3)[3]<-"word2"
+tidyfftwets3<-tidyfftwets3%>%
+  select(id, word2)%>%
+  mutate(word = SnowballC::wordStem(word2))%>%
+  select(id, word)
+fftweets_count<-tidyfftwets3%>%
+  count(id, word)
+library(tidyr)
+ff_sentiments_bing <- fftweets_count %>%
+  inner_join(get_sentiments("bing"), by = "word")%>%
+  group_by(id, sentiment)%>%
+  summarize(pos=sum(n))%>%
+  spread(sentiment, pos)%>%
+  mutate_all(~replace(., is.na(.), 0))%>%
+  mutate(polarity=(positive-negative)/(positive+negative))
+library(ggplot2)
+ff_sentiments_bing<-ff_sentiments_bing[c(-3, -5), ]
+fastfood_plot<-ggplot(ff_sentiments_bing, aes(x=reorder(id, polarity), y= polarity, fill=as.factor(polarity)))+
+  geom_bar(stat="identity", alpha=0.5)+
+  labs(x="State", y="Polarity Score (BING)", fill="Polarity Score", title="Polarity of Tweets Related to Fastfood by State")+
+  coord_flip()
+fastfood_plot
+
+neg_sentiment<-c("WA", "PA", "NV", "MI", "CO", "AZ")
+neutral_senti<-c("WI", "IL")
+pos_sentiment<-c("TX", "SC", "MO", "CA")
+
+pos_fftweets<-fftweets_count%>%
+  filter(id %in% pos_sentiment)%>%
+  group_by(id)%>%
+  arrange(desc(n))
+pos_fftweets_subset<-pos_fftweets[1:12,]
+
+```
+
+```{r}
+#word cloud for fast food related tweets
+fftweets_count2<-fftweets_count%>%
+  arrange(desc(n))
+fftweets_count_subset<-fftweets_count2[1:15, ]
+fastfood_word<-ggplot(fftweets_count_subset, aes(x=reorder(word, n), y=n))+
+  geom_bar(stat="identity")+
+  coord_flip()+
+  labs(title="Fastfood Related Words With Highest Frequency", y="frequency", x="")
+fastfood_word
+```
+
+```{r}
+#Obesity related tweets
+colnames(diettweets_full)[89]<-"id"
+colnames(obtweets_full)[89]<-"id"
+obtweets_full<-rbind(obtweets_full, diettweets_full)
+obtweets_words<-tibble(id=obtweets_full$id, text=obtweets_full$text)
+remove_reg <- "&amp;|&lt;|&gt;"
+tidy_obtweets <- obtweets_words %>% 
+  filter(!str_detect(text, "^RT")) %>%
+  mutate(text = str_remove_all(text, remove_reg)) %>%
+  unnest_tokens(word, text, token = "tweets") %>%
+  filter(!word %in% stop_words$word,
+         !word %in% str_remove_all(stop_words$word, "'"),
+         str_detect(word, "[a-z]"))
+tidyobtwets2<-gsub("^#?", "", tidy_obtweets$word)
+tidyobtwets3<-cbind(tidy_obtweets, tidyobtwets2)
+colnames(tidyobtwets3)[3]<-"word2"
+tidyobtwets3<-tidyobtwets3%>%
+  select(id, word2)%>%
+  mutate(word = SnowballC::wordStem(word2))%>%
+  select(id, word)
+obtweets_count<-tidyobtwets3%>%
+  count(word)
+
+#wordcloud
+set.seed(2103)
+wordcloud(words = obtweets_count$word, freq = obtweets_count$n,
+          max.words=100, random.order=F, colors=brewer.pal(8, "Dark2"))
+
+obtweets_count_state<-tidyobtwets3%>%
+  count(id, word)
+
+obesity_sentiments_afinn <- obtweets_count_state %>%
+  inner_join(get_sentiments("afinn"), by = "word") %>%
+  group_by(id) %>%
+  summarize(score = sum(score * n) / sum(n))
+
+library(readxl)
+obesity_rate<-read_excel("obesity_data.xlsx")
+obesity_rate<-obesity_rate[, -1]
+
+colnames(obesity_rate)[3]<-"id"
+combined_df<-inner_join(obesity_sentiments_afinn, obesity_rate, by="id")
+
+obesity_sentiments_afinn<-obesity_sentiments_afinn[c(-8, -31, -34, -38), ]
+
+scatterplot<-ggplot(combined_df, aes(x=score, y=I(Percent*100)))+
+  geom_point()+
+  geom_smooth()+
+  labs(y="Obesity Rate (2017)", x="Sentiment Score (AFINN)", title="Relationship Between Sentiment Towards Obesity and Obesity Rate")
+scatterplot
+
+
+ob_sentiments_bing <- obtweets_count_state %>%
+  inner_join(get_sentiments("bing"), by = "word")%>%
+  group_by(id, sentiment)%>%
+  summarize(pos=sum(n))%>%
+  spread(sentiment, pos)%>%
+  mutate_all(~replace(., is.na(.), 0))%>%
+  mutate(polarity=(positive-negative)/(positive+negative))
+ob_sentiments_bing<-ob_sentiments_bing[c(-7, -30, -33, -36), ]
+combined_df2<-inner_join(ob_sentiments_bing, obesity_rate, by="id")
+plot<-ggplot(combined_df2, aes(x=polarity, y=I(Percent*100)))+
+  geom_point(size=2)+
+  geom_smooth()+
+  labs(y="Obesity Rate (2017)", x="Sentiment Score (Bing)", title="Relationship Between Sentiment Towards Obesity and Obesity Rate")
+plot
+
+ob_sentiments_bing2<- obtweets_count_state %>%
+  inner_join(get_sentiments("bing"), by = "word")%>%
+  group_by(word, sentiment)%>%
+  summarize(pos=sum(n))%>%
+  spread(sentiment, pos)%>%
+  mutate_all(~replace(., is.na(.), 0))
+
+wordcloud(words = ob_sentiments_bing2$word, freq = ob_sentiments_bing2$negative,
+          max.words=100, random.order=F, colors=brewer.pal(8, "Dark2"))
+
+```
+
+```{r}
+#group states in to high, medium, low obesity rates
+obesity_rate2<-obesity_rate%>%
+  arrange(desc(Percent))
+
+obesity_rate2$cat<-cut(obesity_rate2$Percent, breaks=3, labels=c("low", "normal", "high"))
+combined_full<-inner_join(tidyobtwets3, obesity_rate2, by="id")
+obcount_rate<-combined_full%>%
+  count(cat, word, sort=T)
+
+obcount_rate_subset1<-obcount_rate%>%
+  filter(cat=="high")%>%
+  arrange(desc(n))
+obcount_rate_subset1<-obcount_rate_subset1[1:15, ]
+obcount_rate_subset2<-obcount_rate%>%
+  filter(cat=="normal")%>%
+  arrange(desc(n))
+obcount_rate_subset2<-obcount_rate_subset2[1:15, ]
+obcount_rate_subset3<-obcount_rate%>%
+  filter(cat=="low")%>%
+  arrange(desc(n))
+obcount_rate_subset3<-obcount_rate_subset3[1:15, ]
+obcount_combined<-rbind(obcount_rate_subset1, obcount_rate_subset2, obcount_rate_subset3)
+
+word_plot<-ggplot(obcount_combined, aes(x=reorder(word, n), y=n, fill=cat))+
+  geom_col(show.legend = FALSE)+
+  facet_wrap(~cat, ncol = 3, scales = "free") +
+  coord_flip() +
+  labs(title = "Highest Frequency words in from States with Different Levels of Obesity",
+       caption = "Data from Twitter",
+       x = NULL, y = "term frequency")
+word_plot
+
+```
+
+```{r}
+#Are there differences in words that ppl tweet?
+library(tidyr)
+word_ratios <- combined_full%>%
+  count(cat, word)%>%
+  group_by(word) %>%
+  filter(cat=="high"|cat=="low") %>%
+  ungroup()
+
+  
+word_ratios<-word_ratios%>%
+  spread(cat, n)
+
+word_ratios<-na.omit(word_ratios)
+
+  
+word_ratios<-word_ratios%>% 
+  mutate(sum_l=sum(low))%>%
+  mutate(sum_high=sum(high))%>%
+  mutate(num_l=((low+1)/(sum_l+1))) %>%
+  mutate(num_high=((high+1)/(sum_high+1)))%>%
+  mutate(logratio=log(num_high/num_l))%>%
+  arrange(desc(logratio))
+z<-word_ratios %>%
+  group_by(logratio < 0) %>%
+  top_n(10, abs(logratio)) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, logratio)) %>%
+  ggplot(aes(word, logratio, fill = logratio < 0)) +
+  geom_col(show.legend = FALSE) +
+  coord_flip()+
+  labs(title="Tweets Between States With Highest and Lowest Obesity Rates")+
+  ylab("log odds ratio (High Obesity/Low Obesity)")+
+  scale_fill_discrete(name = "", labels = c("high obesity", "low obesity"))
+
+z
+
+```
+
+```{r}
+#bigram analysis
+tidy_obtweets_bigram <- obtweets_words %>% 
+  filter(!str_detect(text, "^RT")) %>%
+  mutate(text = str_remove_all(text, remove_reg)) %>%
+  unnest_tokens(bigram, text, token = "ngrams", n=2) 
+
+bigrams_separated <- tidy_obtweets_bigram %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+bigrams_filtered <- bigrams_separated %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+
+# new bigram counts:
+bigram_counts <- bigrams_filtered %>% 
+  count(word1, word2, sort = TRUE)
+bigram_counts<-bigram_counts%>%
+  filter(!(word2=="https"))
+bigram_counts<-bigram_counts[c(-1, -11), ]
+
+#visualize network of bigrams
+library(igraph)
+bigram_graph <- bigram_counts %>%
+  filter(n > 2) %>%
+  graph_from_data_frame()
+library(ggraph)
+set.seed(2017)
+a <- grid::arrow(type = "closed", length = unit(.10, "inches"))
+
+ggraph(bigram_graph, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(.07, 'inches')) +
+  geom_node_point(color = "lightblue", size = 4) +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1, size=4) +
+  theme_void()+
+  labs(title="Network of Bigrams in Obesity Related Tweets")
 
 ```
