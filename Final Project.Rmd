@@ -671,7 +671,7 @@ fftweets_count2<-fftweets_count%>%
   arrange(desc(n))
 fftweets_count_subset<-fftweets_count2[1:15, ]
 fastfood_word<-ggplot(fftweets_count_subset, aes(x=reorder(word, n), y=n))+
-  geom_bar(stat="identity")+
+  geom_bar(stat="identity", fill="orange")+
   coord_flip()+
   labs(title="Fastfood Related Words With Highest Frequency", y="frequency", x="")
 fastfood_word
