@@ -1,6 +1,6 @@
 ---
 title: "Final Project"
-author: "Cherie Yu", "Qinyao Xia", "Allison Jiang"
+author: "Cherie Yu, Qinyao Xia, Allison Jiang"
 date: "4/22/2019"
 output: html_document
 ---
@@ -20,7 +20,6 @@ library(ggplot2)
 library(RColorBrewer)
 library(readr)
 library(ggraph)
-library(ggnet)
 library(widgetframe)
 library(DT)
 library(ggnetwork)
@@ -33,6 +32,7 @@ library(stargazer)
 library(plotly)
 library(rgdal)
 library(leaflet)
+library(wordcloud)
 ```  
 
 ```{R}
@@ -559,6 +559,8 @@ map8
 
 ```
 
+
+
 ```{r}
 #Text Data
 #Obesity Tweets
@@ -850,12 +852,12 @@ bigram_counts <- bigrams_filtered %>%
   count(word1, word2, sort = TRUE)
 bigram_counts<-bigram_counts%>%
   filter(!(word2=="https"))
-bigram_counts<-bigram_counts[c(-1, -11), ]
+bigram_counts<-bigram_counts[c(-1, -12), ]
 
 #visualize network of bigrams
 library(igraph)
 bigram_graph <- bigram_counts %>%
-  filter(n > 2) %>%
+  filter(n > 1) %>%
   graph_from_data_frame()
 library(ggraph)
 set.seed(2017)
