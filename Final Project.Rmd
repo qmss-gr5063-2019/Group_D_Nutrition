@@ -1,6 +1,6 @@
 ---
 title: "Final Project"
-author: "Cherie Yu", "Qinyao Xia", "Allison Jiang"
+author: "Cherie Yu, Qinyao Xia, Allison Jiang"
 date: "4/22/2019"
 output: html_document
 ---
@@ -33,6 +33,8 @@ library(plotly)
 library(rgdal)
 library(leaflet)
 library(wordcloud)
+library(mapview)
+library(maps)
 ```  
 
 ```{R}
@@ -216,13 +218,10 @@ plot3 <- ggplot(fastfood_name[1:20,],aes(x = reorder(name,count),y = count,fill 
 ggplotly(plot3)
 ```
 
-The most common fast food restaurants are McDonald's, Burger King, and Taco Bell.
+The most common fast food restaurants are McDonald's, Burger King,and Taco Bell.
 
-```{r}
-library(maps)
-```
 
-Mapping fastfood restaurants 
+### Mapping fastfood restaurants 
 ```{r}
 fastfood$longitude=ifelse(fastfood$longitude>0,0-fastfood$longitude,fastfood$longitude)
 map1=fastfood%>%filter(latitude>25 & latitude<50 & longitude < -50 ) %>% ggplot(aes(x = longitude, y = latitude))+
@@ -233,6 +232,9 @@ map1=fastfood%>%filter(latitude>25 & latitude<50 & longitude < -50 ) %>% ggplot(
 ggplotly(map1)
 ```
 
+To understand the distribution of fastfood restaurants in the US, we visualized the random sample of 10,000 fast food restaurants from the Datafiniti dataset. The graph focus on the contiguous U.S. land and shows a disporportional dense distribution of fastfood restaurant in the East and West coast than Mid America, which is understandable as coastal area has higher population density. We are interested in looking for difference between distribution among top popular restaurants.
+
+### Fast Food Restaurant Distribution for The Top 4
 ```{r}
 map2=fastfood%>%filter(latitude>25 & latitude<50 & longitude < -50 ) %>% 
   filter(name  %in% c("McDonald's","Burger King","Taco Bell","Wendy's"))%>%
@@ -244,6 +246,8 @@ map2=fastfood%>%filter(latitude>25 & latitude<50 & longitude < -50 ) %>%
   facet_wrap("name")
 ggplotly(map2)
 ```
+
+This plot shows McDonal's is popular everywhere while Burger King is more popular in the north, and Taco Bell is more popular in the Mid America area with density higher in states like Illionois, Indiana, Ohio and Wisconsin.
 
 ```{r}
 lnglat=data %>%filter(QuestionID == "Q036" & YearStart == 2017) %>%
@@ -258,7 +262,11 @@ lnglat=transform(lnglat, lat = as.numeric(lat),
                lng = as.numeric(lng))
 ```
 
-state obesity rates 2011
+
+### Mapping Obesity in the US
+
+We would like to examine the first year available (2011) data on the Obesity rate across the U.S.
+
 ```{r}
 ob11 <- data %>%
   filter(QuestionID == "Q036" & YearStart == 2011) %>%
@@ -266,37 +274,38 @@ ob11 <- data %>%
          Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
   filter(Total == "Total")
 stateob=subset(ob11,LocationDesc!="Guam" & LocationDesc!="National")
-stateob$severity=ifelse(stateob$Data_Value<25,"Under 25",ifelse(stateob$Data_Value<30,"25-30"," 30  and up"))
+stateob$severity=ifelse(stateob$Data_Value<25,"Under 25%",ifelse(stateob$Data_Value<30,"25-30%"," 30% and up"))
 stateob$value=stateob$Data_Value
 stateob=transform(stateob, value = as.character(value))
 names(stateob)[names(stateob) == 'LocationDesc'] <- "NAME"
 obmap=merge(states,stateob,by="NAME")
 obmap=merge(obmap,lnglat,by="NAME")
-
 pal = colorFactor("Set1", domain = obmap@data$severity) 
 
 map3=leaflet(obmap)%>%
-  setView(-100.0382679, 42.3489054, zoom =4)%>%
+  setView(-100.0382679, 42.3489054, zoom =3)%>%
   addPolygons(color = "#9b9393", weight = 1, smoothFactor = 0.5,
     opacity = 1.0, fillOpacity = 0.5,
     fillColor = ~colorFactor("Set1",obmap@data$severity)(obmap@data$severity),
     highlightOptions = highlightOptions(color = "white", weight = 2,
       bringToFront = TRUE),popup=paste("State: ",obmap$NAME,"<br/>",
                                  "Obesity Rate:",obmap$Data_Value,"<br/>"))%>%
-  addLegend(pal=pal,values = ~obmap$severity, title = "State Obesity Rate")%>%
-  addCircles(lat=obmap$lat,lng=obmap$lng,label = ~`value`,weight = 2, radius=0.1, color="#ffa500", stroke = TRUE,labelOptions = labelOptions(noHide = T,opacity = 0.8))%>%
+  addLegend(pal=pal,values = ~obmap$severity, title = "2011 State Obesity Rate")%>%
   addTiles()
 map3
 ```
-state obesity rates 2014
+
+The obesity rates was splited into under 25%, 25-30% and 30% up groups. In 2011, 9 states are in the green shade, meaning their obesity rate was under 25%.
+
 ```{r}
-ob14 <- data %>%
-  filter(QuestionID == "Q036" & YearStart == 2014) %>%
+#state obesity rates 2013
+ob13 <- data %>%
+  filter(QuestionID == "Q036" & YearStart == 2013) %>%
   select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
          Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
   filter(Total == "Total")
-stateob=subset(ob14,LocationDesc!="Guam" & LocationDesc!="National")
-stateob$severity=ifelse(stateob$Data_Value<25,"Under 25",ifelse(stateob$Data_Value<30,"25-30"," 30  and up"))
+stateob=subset(ob13,LocationDesc!="Guam" & LocationDesc!="National")
+stateob$severity=ifelse(stateob$Data_Value<25,"Under 25%",ifelse(stateob$Data_Value<30,"25-30%"," 30% and up"))
 stateob$value=stateob$Data_Value
 stateob=transform(stateob, value = as.character(value))
 names(stateob)[names(stateob) == 'LocationDesc'] <- "NAME"
@@ -306,18 +315,51 @@ obmap=merge(obmap,lnglat,by="NAME")
 pal = colorFactor("Set1", domain = obmap@data$severity) 
 
 map4=leaflet(obmap)%>%
-  setView(-100.0382679, 42.3489054, zoom =4)%>%
+  setView(-100.0382679, 42.3489054, zoom =3)%>%
   addPolygons(color = "#9b9393", weight = 1, smoothFactor = 0.5,
     opacity = 1.0, fillOpacity = 0.5,
     fillColor = ~colorFactor("Set1",obmap@data$severity)(obmap@data$severity),
     highlightOptions = highlightOptions(color = "white", weight = 2,
       bringToFront = TRUE),popup=paste("State: ",obmap$NAME,"<br/>",
                                  "Obesity Rate:",obmap$Data_Value,"<br/>"))%>%
-  addLegend(pal=pal,values = ~obmap$severity, title = "State Obesity Rate")%>%
-  addCircles(lat=obmap$lat,lng=obmap$lng,label = ~`value`,weight = 2, radius=0.1, color="#ffa500", stroke = TRUE,labelOptions = labelOptions(noHide = T,opacity = 0.8))%>%
+  addLegend(pal=pal,values = ~obmap$severity, title = "2013 State Obesity Rate")%>%
   addTiles()
-map4
+
 ```
+
+```{r}
+#state obesity rates 2015
+
+ob15 <- data %>%
+  filter(QuestionID == "Q036" & YearStart == 2015) %>%
+  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
+         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
+  filter(Total == "Total")
+stateob=subset(ob15,LocationDesc!="Guam" & LocationDesc!="National")
+stateob$severity=ifelse(stateob$Data_Value<25,"Under 25%",ifelse(stateob$Data_Value<30,"25-30%"," 30% and up"))
+stateob$value=stateob$Data_Value
+stateob=transform(stateob, value = as.character(value))
+names(stateob)[names(stateob) == 'LocationDesc'] <- "NAME"
+obmap=merge(states,stateob,by="NAME")
+obmap=merge(obmap,lnglat,by="NAME")
+
+pal = colorFactor("Set1", domain = obmap@data$severity) 
+
+map4_1=leaflet(obmap)%>%
+  setView(-100.0382679, 42.3489054, zoom =3)%>%
+  addPolygons(color = "#9b9393", weight = 1, smoothFactor = 0.5,
+    opacity = 1.0, fillOpacity = 0.5,
+    fillColor = ~colorFactor("Set1",obmap@data$severity)(obmap@data$severity),
+    highlightOptions = highlightOptions(color = "white", weight = 2,
+      bringToFront = TRUE),popup=paste("State: ",obmap$NAME,"<br/>",
+                                 "Obesity Rate:",obmap$Data_Value,"<br/>"))%>%
+  addLegend(pal=pal,values = ~obmap$severity, title = "2015 State Obesity Rate")%>%
+  addTiles()
+
+```
+
+
+However, in 2017, the situation has changed dramatically. Only one state left on the map has less than 25% obesity rate. The map is presented below.
 
 ```{r}
 ob17 <- data %>%
@@ -326,7 +368,7 @@ ob17 <- data %>%
          Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
   filter(Total == "Total")
 stateob=subset(ob17,LocationDesc!="Guam" & LocationDesc!="National")
-stateob$severity=ifelse(stateob$Data_Value<25,"Under 25",ifelse(stateob$Data_Value<30,"25-30"," 30  and up"))
+stateob$severity=ifelse(stateob$Data_Value<25,"Under 25%",ifelse(stateob$Data_Value<30,"25-30%"," 30% and up"))
 stateob$value=stateob$Data_Value
 stateob=transform(stateob, value = as.character(value))
 names(stateob)[names(stateob) == 'LocationDesc'] <- "NAME"
@@ -336,31 +378,44 @@ obmap=merge(obmap,lnglat,by="NAME")
 pal = colorFactor("Set1", domain = obmap@data$severity) 
 
 map5=leaflet(obmap)%>%
-  setView(-100.0382679, 42.3489054, zoom =4)%>%
+  setView(-100.0382679, 42.3489054, zoom =3)%>%
   addPolygons(color = "#9b9393", weight = 1, smoothFactor = 0.5,
     opacity = 1.0, fillOpacity = 0.5,
     fillColor = ~colorFactor("Set1",obmap@data$severity)(obmap@data$severity),
     highlightOptions = highlightOptions(color = "white", weight = 2,
       bringToFront = TRUE),popup=paste("State: ",obmap$NAME,"<br/>",
                                  "Obesity Rate:",obmap$Data_Value,"<br/>"))%>%
-  addLegend(pal=pal,values = ~obmap$severity, title = "State Obesity Rate")%>%
-  addCircles(lat=obmap$lat,lng=obmap$lng,label = ~`value`,weight = 2, radius=0.1, color="#ffa500", stroke = TRUE,labelOptions = labelOptions(noHide = T,opacity = 0.8))%>%
+  addLegend(pal=pal,values = ~obmap$severity, title = "2017 State Obesity Rate")%>%
   addTiles()
 map5
 ```
 
-obstate and distribution of Fastfood ???2017???
+Therefore We would like to examine the changes over the past period.
+
+```{R}
+latticeView(map3,map4,map4_1,map5)
+```
+
+The grid shows the spread of obesity throughout the past 6 years. The red-shaded and blue-shaded states gradually increase and took over states with low obesity rate. In 2013, there are 6 green states left, in 2015, there is only 5. And the 2017 shows only colorado Stands as the only state with Obesity rate under 25% at 22.6%.
+
+### Obesity and Fastfood
+
+To further explore the relationship, we mapped the distribution of fastfood restaruant and State obesity level（2017）
+
 ```{r}
 pop <- paste("Name:",fastfood$name,"<br/>",
              "City:",fastfood$city,"<br/>",
-             "Province:",fastfood$province,"<br/>",
-             "PostalCode:",fastfood$postalCode,"<br/>")
-map6=map5%>%
-  addCircleMarkers(lat = fastfood$latitude,lng = fastfood$longitude,popup = pop,weight = 2, radius=0.1,clusterOptions = markerClusterOptions())
+             "State:",fastfood$province,"<br/>")
+map6=map5%>%addTiles()%>%addCircleMarkers(lat = fastfood$latitude,lng = fastfood$longitude,popup = pop,weight = 2, radius=0.1,clusterOptions = markerClusterOptions())
 map6
 ```
 
-maybe exercise frequecy matters?
+By clustering the distribution of fastfood restaurants, we see that states with 30% and up obesity rate, indicated by the red shade, do have heavier concentration of fastfood restaurant in Middle and East America. However, high obesity state like Alaska does not have as much Fastfood Restaurant.
+
+### Fastfood and Exercise
+
+The finding lead to our stronger interest in explore the fastfood restaurant with other behavior. We would like to explore fastfood restaurant distributio and physical activity of the state residents.
+
 ```{r}
 ac17 <- data %>%
   filter(QuestionID == "Q043" & YearStart == 2017) %>%
@@ -368,7 +423,7 @@ ac17 <- data %>%
          Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
   filter(Total == "Total")
 stateac=subset(ac17,LocationDesc!="Guam" & LocationDesc!="National")
-stateac$level=ifelse(stateac$Data_Value<35,"Under 35",ifelse(stateac$Data_Value<40,"35-40",ifelse(stateac$Data_Value<45,"45-50",ifelse(stateac$Data_Value<55,"50-55","55 and up"))))
+stateac$level=ifelse(stateac$Data_Value<35,"Under 35%",ifelse(stateac$Data_Value<40,"35-40%",ifelse(stateac$Data_Value<45,"45-50%",ifelse(stateac$Data_Value<55,"50-55%","55% and up"))))
 stateac$value=stateac$Data_Value
 stateac=transform(stateac, value = as.character(value))
 names(stateac)[names(stateac) == 'LocationDesc'] <- "NAME"
@@ -386,12 +441,16 @@ map7=leaflet(acmap)%>%
                                  "Activity Rate:",acmap$Data_Value,"<br/>"))%>%
   addLegend(pal=pal,values = ~acmap$level, title = "State Activity Rate")%>%
   addTiles()%>%
-  addCircles(lat=obmap$lat,lng=obmap$lng,label = ~`value`,weight = 2, radius=0.1, color="#ffa500", stroke = TRUE,labelOptions = labelOptions(noHide = T,opacity = 0.8))%>%
-  addCircles(lat = fastfood$latitude,lng = fastfood$longitude,popup = pop,weight = 2, radius=40, color="#ffa500", stroke = TRUE, fillOpacity = 0.5)
+  addCircles(lat = fastfood$latitude,lng = fastfood$longitude,popup = pop,weight = 2, radius=40, color="#ffa500", stroke = TRUE, fillOpacity = 0.1)
 map7
 
 ```
 
+The fastfood and exercise map shows the states in Mid/south U.S has lower activity rate, and they are located in dense fastfood restaurant area as well. Northeastern US has activity rate around 50-55%, and the fast food restaurant distribution is also dense. the existance of fastfood does not decrease people exercise rates. The west coast has higher activity rate and they have lower distribution of fastfood restaurant. Alaska has high activity rate and low fastfood restaurant distribution. The only state has activity rate under 35% is Puerto Rico, but the data set does not have infomation regarding the fastfood restaurant here.
+
+### Vegetable intake and fastfood restaurant
+
+We would further explore whether fastfood restaurant distribution is closely related to state resident nutritional intake. We mapped the vegetable intake and the fastfood distribution.
 
 ```{r}
 ve17 <- data %>%
@@ -400,32 +459,33 @@ ve17 <- data %>%
          Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
   filter(Total == "Total")
 stateve=subset(ve17,LocationDesc!="Guam" & LocationDesc!="National")
-stateve$level=ifelse(stateve$Data_Value<15,"Under 15",ifelse(stateve$Data_Value<20,"15-20%",ifelse(stateve$Data_Value<25,"25-30%",ifelse(stateve$Data_Value<35,"30-35%","35% and up"))))
+stateve$level=ifelse(stateve$Data_Value<15,"0-15%",ifelse(stateve$Data_Value<20,"15-20%",ifelse(stateve$Data_Value<25,"25-30%",ifelse(stateve$Data_Value<35,"30-35%","35% and up"))))
 stateve$value=stateve$Data_Value
 stateve=transform(stateve, value = as.character(value))
 names(stateve)[names(stateve) == 'LocationDesc'] <- "NAME"
 vemap=merge(states,stateve,by="NAME")
 vemap=merge(vemap,lnglat,by="NAME")
 
-pal = colorFactor("Set2", domain = vemap@data$level) 
+pal = colorFactor("Set1", domain = vemap@data$level) 
 
 map8=leaflet(vemap)%>%
   setView(-100.0382679, 42.3489054, zoom =4)%>%
   addPolygons(color = "#9b9393", weight = 1, smoothFactor = 0.5,
     opacity = 1.0, fillOpacity = 0.5,
-    fillColor = ~colorFactor("Set2",vemap@data$level)(vemap@data$level),
+    fillColor = ~colorFactor("Set1",vemap@data$level)(vemap@data$level),
     highlightOptions = highlightOptions(color = "white", weight = 2,
       bringToFront = TRUE),popup=paste("State: ",vemap$NAME,"<br/>",
-                                 "Activity Rate:",vemap$Data_Value,"<br/>"))%>%
+                                 "Less than once Veggie Consumption:",vemap$Data_Value,"<br/>"))%>%
   addLegend(pal=pal,values = ~vemap$level, title = "Population consuming 
                    vegetables less than one time daily")%>%
   addTiles()%>%
-  addCircles(lat=obmap$lat,lng=obmap$lng,label = ~`value`,weight = 2, radius=0.1, color="#ffa500", stroke = TRUE,labelOptions = labelOptions(noHide = T,opacity = 0.8))%>%
-  addCircles(lat = fastfood$latitude,lng = fastfood$longitude,popup = pop, weight = 2, radius=40, color="#ffa500", stroke = TRUE, fillOpacity = 0.5)
+  addCircles(lat = fastfood$latitude,lng = fastfood$longitude,popup = pop, weight = 2, radius=40, color="#ffa500", stroke = TRUE, fillOpacity = 0.1)
 
 map8
 
 ```
+
+The vegetable intake graph shows the upper northern states have less than 15% people eating less veggie than once daily. All east coast except New York have only 15-20% resident eating less than once veggie. Whereas the south west US is has around 25-30% people eating vegetable less than once daily. Interestingly, Puerto Rico has more than 35% people eating vegetable less than one a day. Alaska on the other hand, is blue-shaded with 19% people eating veggie less than once/day.
 
 ```{r}
 #Text Data
