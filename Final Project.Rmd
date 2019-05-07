@@ -1,6 +1,6 @@
 ---
 title: "Final Project"
-author: "Cherie Yu, Qinyao Xia, Allison Jiang"
+author: "Cherie Yu", "Qinyao Xia", "Allison Jiang"
 date: "4/22/2019"
 output: html_document
 ---
@@ -44,56 +44,213 @@ states <- readOGR("shp/cb_2013_us_state_20m.shp",
   layer = "cb_2013_us_state_20m", GDAL1_integer64_policy = TRUE)
 ```
 
+# Obesity and Nutrition in the United States
+
+In this project, we aim to present a interactive display of obesity rates in adults across the different states in the U.S., and more pertinently, analyze how differences in the level of nutritional intake across the different states correlate with obesity rates. In addition, we also analyze the differences in the level of physical activities across the different states. Since it is widely known that one???s diet and physical exercises play a key role in affecting one???s weight and health, we believe that states with a widespread number of fast food outlets see greater occurrence of obesity as the presence of such unhealthy food options fuel adults living in these to adopt unhealthy diets, thereby neglecting their weight and health. In particular, our analysis consist of three major components:
+
+1. Obesity Rate
+2. Adult Nutrition and Physical Activities
+3. Fast Food Prevalence
+
+### Dataset
+1. CDC Nutrition, Physical Activity, and Obesity data
+2. Fast Food data
+3. Twitter API data
+
+### Obesity Rate
+
+#### Over Year Line Graph
 ```{r}
-table(data$YearStart)
-table(data$YearEnd)
+data_nation <- data %>%
+  filter(LocationDesc == "National") %>%
+  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
+         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)
+
+data_nation_ob <- data_nation %>%
+  filter(QuestionID == "Q036") %>%
+  filter(!is.na(Total)|!is.na(Gender))
+
+data_nation_ob$Gender <- ifelse(is.na(data_nation_ob$Gender), data_nation_ob$Total, data_nation_ob$Gender)
+
+plot4 <- ggplot(data = data_nation_ob, aes(x=YearStart, y=Data_Value,group=Gender)) +
+  geom_line(aes(color=Gender))+labs(x = "Year",y = "Obesity Rate",
+                   title = "Obesity Rate from 2011 to 2017") +
+  scale_color_manual(values=c("#FFDAB9","#1E90FF","black")) +
+  theme_minimal()
+ggplotly(plot4)
 ```
 
+From the graph, total obesity rate increases persistently from 2011 to 2017. As we can see, the overall male obesity rate is higher than female. 
+
+#### Over Year Line Graph by Education
 ```{r}
-table(data$LocationAbbr)
-table(data$LocationDesc)
+data_nation_ob_edu <- data_nation %>%
+  filter(QuestionID == "Q036" & !is.na(Education))
+
+plot6 <- ggplot(data = data_nation_ob_edu, aes(x=YearStart, y=Data_Value,
+                                                  group=Education)) +
+  geom_line(aes(color=Education))+
+  labs(x = "Year",y = "Obesity Rate",
+       title = "Obesity Rate from 2011 to 2017 by Educaiton")  + 
+  scale_color_brewer(palette="Blues") +
+  theme_minimal()
+ggplotly(plot6)
 ```
 
+People with higher degree tend to have lower obesity rate, and the obesity rate of people with colledge degree is the lowest. 
+
+#### Over Year Line Graph by Age
 ```{r}
-table(data$Question)
+data_nation_ob_age <- data_nation %>%
+  filter(QuestionID == "Q036" & !is.na(`Age(years)`))
+
+plot7 <- ggplot(data = data_nation_ob_age, aes(x=YearStart, y=Data_Value,
+                                                  group=`Age(years)`)) +
+  geom_line(aes(color=`Age(years)`))+
+  labs(x = "Year",y = "Obesity Rate",
+       title = "Obesity Rate from 2011 to 2017 by age") + 
+  scale_color_brewer(palette="Blues")+
+  theme_minimal()
+ggplotly(plot7)
 ```
 
+This graph shows that middle-age groups from 35 to 64 tend to have the highest obsesity rate, while the young adults with age from 18 to 24 have the lowest obesity rate. 
+
+#### Over Year Line Graph by Income
 ```{r}
-variable.names(data)
+data_nation_ob_inc <- data_nation %>%
+  filter(QuestionID == "Q036" & !is.na(Income))
+
+plot8 <- ggplot(data = data_nation_ob_inc, aes(x=YearStart, y=Data_Value,
+                                                  group=Income)) +
+  geom_line(aes(color=Income))+
+  labs(x = "Year",y = "Obesity Rate",
+       title = "Obesity Rate from 2011 to 2017  by income") + 
+  scale_color_brewer(palette="Blues")+
+  theme_minimal()
+ggplotly(plot8)
 ```
 
+This graph shows people with higher income tend to have lower obesity rate. 
 
-### Fast Food Data
+#### State in the Percentage of Obesity in 2017
 ```{r}
-fastfood_city <- fastfood %>%
-  group_by(city) %>%
-  summarise(count = n()) %>% 
-  arrange(desc(count))
-plot1 <- ggplot(fastfood_city[1:20,],aes(x = reorder(city,count),y = count,fill = count)) + geom_bar(stat = 'identity') +
-  geom_label(aes(label = count)) +
+data_ob <- data %>%
+  filter(QuestionID == "Q036" & YearStart == 2017) %>%
+  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
+         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
+  filter(Total == "Total" & !is.na(Data_Value))
+
+
+plot10 <- ggplot(data_ob,aes(x = reorder(LocationDesc,Data_Value),
+                                    y = Data_Value,fill = Data_Value)) +
+  geom_bar(stat = 'identity') +
+  geom_label(aes(label = Data_Value)) +
   theme_minimal(8) +
-  labs(x = "City",y = "Count",title = "Top 20 cities in the number of fast-food restaurants") +
+  labs(x = "State", y = "Obesity Rate",title = "States in the Percentage of Obesity in 2017") +
   scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
   guides(fill = FALSE) +
   coord_flip()
-ggplotly(plot1)
+ggplotly(plot10)
 ```
+
+West Virginia has the highest obesity rate with the value 38.1%, while Colorado has the lowest with the value 22.6%
+
+### Physical Activities
+
+```{r}
+data_nation_ac <- data_nation %>%
+  filter(QuestionID == "Q043") %>%
+    filter(!is.na(Total)|!is.na(Gender))
+
+data_nation_ac$Gender <- ifelse(is.na(data_nation_ac$Gender), data_nation_ac$Total, data_nation_ac$Gender)
+
+plot4 <- ggplot(data = data_nation_ob, aes(x=YearStart, y=Data_Value,group=Gender)) +
+  geom_line(aes(color=Gender))+labs(x = "Year",y = "Obesity Rate",
+                   title = "Obesity Rate from 2011 to 2017") +
+  scale_color_manual(values=c("#FFDAB9","#1E90FF","black")) +
+  theme_minimal()
+ggplotly(plot4)
+
+plot13 <- ggplot(data = data_nation_ac, aes(x=YearStart, y=Data_Value,group=Gender)) +
+  geom_line(aes(color=Gender))+labs(x = "Year",
+                   y = "Physical Activities Rate",
+                   title = "Percent of Adults Who Achieve Physical Activity")+
+  scale_color_manual(values=c("#FFDAB9","#1E90FF","black")) +
+  theme_minimal()
+ggplotly(plot13)
+```
+
+The total physical activities rate is falling from 2011 to 2017. Physical activity rate for male is higher than female.
+
+#### State in the Percentage of Physical Activities in 2017
+
+```{r}
+data_ac <- data %>%
+  filter(QuestionID == "Q043" & YearStart == 2017) %>%
+  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
+         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
+  filter(Total == "Total" & !is.na(Data_Value)) 
+
+
+plot16 <- ggplot(data_ac,aes(x = reorder(LocationDesc,Data_Value),
+                                    y = Data_Value,fill = Data_Value)) +
+  geom_bar(stat = 'identity') +
+  geom_label(aes(label = Data_Value)) +
+  theme_minimal(8) +
+  labs(x = "State", y = "Physical Activities Rate",title = "States in the Percentage of Adults Who Do Physical Activities in 2017") +
+  scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
+  guides(fill = FALSE) +
+  coord_flip()
+ggplotly(plot16)
+```
+
+Vermont has the highest physical activity rate with the value 59.7%, while Purto Tico has the lowest with the value 19.6%
+
+### Nutrition
+
+```{r}
+data_ve <- data %>%
+  filter(QuestionID == "Q019" & YearStart == 2017) %>%
+  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
+         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
+  filter(Total == "Total" & !is.na(Data_Value))
+
+
+plot17 <- ggplot(data_ve,aes(x = reorder(LocationDesc,Data_Value),
+                                    y = Data_Value,fill = Data_Value)) +
+  geom_bar(stat = 'identity') +
+  geom_label(aes(label = Data_Value)) +
+  theme_minimal(8) +
+  labs(x = "State", y = "Vegetables Consuming Rate",
+title = "States in the percentage of obesity adults who report consuming vegetables less than one time daily in 2017") +
+  scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
+  guides(fill = FALSE) +
+  coord_flip()
+ggplotly(plot17)
+```
+
+Puerto Rico has the highest percentage of obesity adults who report consuming vegetables less than one time daily in 2017, while Maine has the lowest.
+
+### Fast Food Restaurant
 
 ```{r}
 fastfood_province <- fastfood %>%
   group_by(province) %>% 
   summarise("count" = n()) %>% 
   arrange(desc(count))
-plot2 <- ggplot(fastfood_province[1:20,],aes(x = reorder(province,count),y = count,fill = count)) +
+plot2 <- ggplot(fastfood_province,aes(x = reorder(province,count),y = count,fill = count)) +
   geom_bar(stat = 'identity') +
   geom_label(aes(label = count)) +
   theme_minimal(8) +
-  labs(x = "Province", y = "Count",title = "Top 20 province in the number of fast-food restaurants") +
+  labs(x = "State", y = "Count",title = "States in the Number of Fast-Food Restaurants") +
   scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
   guides(fill = FALSE) +
   coord_flip()
 ggplotly(plot2)
 ```
+
+There are 676 fast food restaurants in California.
 
 ```{r}
 fastfood_name <- fastfood %>%
@@ -104,251 +261,14 @@ plot3 <- ggplot(fastfood_name[1:20,],aes(x = reorder(name,count),y = count,fill 
   geom_bar(stat = 'identity') +
   geom_label(aes(label = count)) +
   theme_minimal(8) +
-  labs(x = "Name",y = "Count",title = "The top 20 brands in the number of fast-food restaurants") +
+  labs(x = "Name",y = "Count",title = "The top 20 Brands in the Number of Fast-Food Restaurants") +
   scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
   guides(fill = FALSE) +
   coord_flip()
 ggplotly(plot3)
 ```
 
-### Nutrition Data
-
-#### over year line graph
-```{r}
-data_nation <- data %>%
-  filter(LocationDesc == "National") %>%
-  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
-         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)
-
-data_nation_ob <- data_nation %>%
-  filter(QuestionID == "Q036" & Total == "Total")
-
-plot4 <- ggplot(data = data_nation_ob, aes(x=YearStart, y=Data_Value)) +
-  geom_line()+labs(x = "Year",y = "Percentage of obesity",
-                   title = "Percentage of obesity in the US over time")
-ggplotly(plot4)
-```
-
-```{r}
-data_nation_ob_gender <- data_nation %>%
-  filter(QuestionID == "Q036" & !is.na(Gender))
-
-plot5 <- ggplot(data = data_nation_ob_gender, aes(x=YearStart, y=Data_Value,
-                                                  group=Gender)) +
-  geom_line(aes(color=Gender))+
-  labs(x = "Year",y = "Percentage of obesity",
-       title = "Percentage of obesity in the US over time by gender") 
-ggplotly(plot5)
-```
-
-```{r}
-data_nation_ob_edu <- data_nation %>%
-  filter(QuestionID == "Q036" & !is.na(Education))
-
-plot6 <- ggplot(data = data_nation_ob_edu, aes(x=YearStart, y=Data_Value,
-                                                  group=Education)) +
-  geom_line(aes(color=Education))+
-  labs(x = "Year",y = "Percentage of obesity",
-       title = "Percentage of obesity in the US over time by education")  + 
-  scale_color_brewer(palette="Blues")
-ggplotly(plot6)
-```
-
-```{r}
-data_nation_ob_age <- data_nation %>%
-  filter(QuestionID == "Q036" & !is.na(`Age(years)`))
-
-plot7 <- ggplot(data = data_nation_ob_age, aes(x=YearStart, y=Data_Value,
-                                                  group=`Age(years)`)) +
-  geom_line(aes(color=`Age(years)`))+
-  labs(x = "Year",y = "Percentage of obesity",
-       title = "Percentage of obesity in the US over time by age") + 
-  scale_color_brewer(palette="Blues")
-ggplotly(plot7)
-```
-
-```{r}
-data_nation_ob_inc <- data_nation %>%
-  filter(QuestionID == "Q036" & !is.na(Income))
-
-plot8 <- ggplot(data = data_nation_ob_inc, aes(x=YearStart, y=Data_Value,
-                                                  group=Income)) +
-  geom_line(aes(color=Income))+
-  labs(x = "Year",y = "Percentage of obesity",
-       title = "Percentage of obesity in the US over time by income") + 
-  scale_color_brewer(palette="Blues")
-ggplotly(plot8)
-```
-
-```{r}
-data_nation_ob_race <- data_nation %>%
-  filter(QuestionID == "Q036" & !is.na(`Race/Ethnicity`))
-
-plot9 <- ggplot(data = data_nation_ob_race, aes(x=YearStart, y=Data_Value,
-                                                  group=`Race/Ethnicity`)) +
-  geom_line(aes(color=`Race/Ethnicity`))+
-  labs(x = "Year",y = "Percentage of obesity",
-       title = "Percentage of obesity in the US over time by race") 
-ggplotly(plot9)
-```
-
-### State in 2014
-```{r}
-data_ob <- data %>%
-  filter(QuestionID == "Q036" & YearStart == 2014) %>%
-  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
-         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
-  filter(Total == "Total")
-
-
-plot10 <- ggplot(data_ob[1:20,],aes(x = reorder(LocationDesc,Data_Value),
-                                    y = Data_Value,fill = Data_Value)) +
-  geom_bar(stat = 'identity') +
-  geom_label(aes(label = Data_Value)) +
-  theme_minimal(8) +
-  labs(x = "State", y = "Percentage of obesity",title = "Top 20 state in the percentage of obesity in 2014") +
-  scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
-  guides(fill = FALSE) +
-  coord_flip()
-ggplotly(plot10)
-```
-
-```{r}
-data_ob_gen <- data %>%
-  filter(QuestionID == "Q036" & YearStart == 2014) %>%
-  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
-         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
-  filter(!is.na(Gender))
-
-
-plot11 <- ggplot(data_ob_gen[1:20,],aes(x = reorder(LocationDesc,Data_Value),
-                                    y = Data_Value,fill = Gender)) +
-  geom_bar(stat = 'identity', position=position_dodge())  +
-  labs(x = "State", y = "Percentage of obesity",title = "Top 20 state in the percentage of obesity in 2014 by gender")  +
-  coord_flip()
-ggplotly(plot11)
-```
-
-```{r}
-data_ob_edu <- data %>%
-  filter(QuestionID == "Q036" & YearStart == 2014) %>%
-  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
-         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
-  filter(!is.na(Education))
-
-plot12 <- ggplot(data_ob_edu[1:40,],aes(x = reorder(LocationDesc,Data_Value),
-                                    y = Data_Value,fill = Data_Value)) +
-  geom_bar(stat = 'identity') +
-  geom_label(aes(label = Data_Value)) +
-  theme_minimal(8) +
-  labs(x = "State", y = "Percentage of obesity",title = "Top 20 state in the percentage of obesity in 2014 by education") +
-  scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
-  guides(fill = FALSE) +
-  coord_flip() +
-  facet_wrap("Education")
-ggplotly(plot12)
-```
-
-```{r}
-data_nation_ac <- data_nation %>%
-  filter(QuestionID == "Q043" & Total == "Total")
-
-plot13 <- ggplot(data = data_nation_ac, aes(x=YearStart, y=Data_Value)) +
-  geom_line()+labs(x = "Year",y = "Percentage of adults who achieve physical activities",
-                   title = "Percent of adults who achieve at least 150 minutes a week 
-                   of moderate-intensity aerobic physical activity or 75 minutes a 
-                   week of vigorous-intensity aerobic activity (or an equivalent 
-                   combination) ")
-ggplotly(plot13)
-```
-
-```{r}
-data_nation_ac_gender <- data_nation %>%
-  filter(QuestionID == "Q043" & !is.na(Gender))
-
-plot14 <- ggplot(data = data_nation_ac_gender, aes(x=YearStart, y=Data_Value,
-                                                  group=Gender)) +
-  geom_line(aes(color=Gender))+
-  labs(x = "Year",y = "Percentage of obesity",
-       title = "Percentage of adults who do physical activities") 
-ggplotly(plot14)
-```
-
-```{r}
-data_nation_ac_edu <- data_nation %>%
-  filter(QuestionID == "Q043" & !is.na(Education))
-
-plot15 <- ggplot(data = data_nation_ac_edu, aes(x=YearStart, y=Data_Value,
-                                                  group=Education)) +
-  geom_line(aes(color=Education))+
-  labs(x = "Year",y = "Percentage of obesity",
-       title = "Percentage of adults who do physical activities")  + 
-  scale_color_brewer(palette="Blues")
-ggplotly(plot15)
-```
-
-```{r}
-data_ac <- data %>%
-  filter(QuestionID == "Q043" & YearStart == 2013) %>%
-  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
-         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
-  filter(Total == "Total")
-
-
-plot16 <- ggplot(data_ac[1:20,],aes(x = reorder(LocationDesc,Data_Value),
-                                    y = Data_Value,fill = Data_Value)) +
-  geom_bar(stat = 'identity') +
-  geom_label(aes(label = Data_Value)) +
-  theme_minimal(8) +
-  labs(x = "State", y = "Percentage of adults who do physical activities",title = "Top 20 state in the percentage of adults who do physical activities in 2013") +
-  scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
-  guides(fill = FALSE) +
-  coord_flip()
-ggplotly(plot16)
-```
-
-```{r}
-data_ve <- data %>%
-  filter(QuestionID == "Q019" & YearStart == 2017) %>%
-  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
-         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
-  filter(Total == "Total")
-
-
-plot17 <- ggplot(data_ve[1:20,],aes(x = reorder(LocationDesc,Data_Value),
-                                    y = Data_Value,fill = Data_Value)) +
-  geom_bar(stat = 'identity') +
-  geom_label(aes(label = Data_Value)) +
-  theme_minimal(8) +
-  labs(x = "State", y = "Percent of adults who report consuming 
-                   vegetables less than one time daily",
-title = "Top 20 state in the percentage of obesity adults who report 
-consuming vegetables less than one time daily in 2017") +
-  scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
-  guides(fill = FALSE) +
-  coord_flip()
-ggplotly(plot17)
-```
-
-```{r}
-data_ve_edu <- data %>%
-  filter(QuestionID == "Q019" & YearStart == 2017) %>%
-  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
-         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
-  filter(!is.na(Education))
-
-plot18 <- ggplot(data_ve_edu[1:40,],aes(x = reorder(LocationDesc,Data_Value),
-                                    y = Data_Value,fill = Data_Value)) +
-  geom_bar(stat = 'identity') +
-  geom_label(aes(label = Data_Value)) +
-  theme_minimal(8) +
-  labs(x = "State", y = "Percentage of obesity",title = "Top 20 state in the percentage of obesity in 2014 by education") +
-  scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
-  guides(fill = FALSE) +
-  coord_flip() +
-  facet_wrap("Education")
-ggplotly(plot18)
-```
+The most common fast food restaurants are McDonald's, Burger King, and Taco Bell.
 
 ```{r}
 library(maps)
@@ -481,7 +401,7 @@ map5=leaflet(obmap)%>%
 map5
 ```
 
-obstate and distribution of Fastfood （2017）
+obstate and distribution of Fastfood ???2017???
 ```{r}
 pop <- paste("Name:",fastfood$name,"<br/>",
              "City:",fastfood$city,"<br/>",
@@ -558,8 +478,6 @@ map8=leaflet(vemap)%>%
 map8
 
 ```
-
-
 
 ```{r}
 #Text Data
@@ -673,7 +591,7 @@ fftweets_count2<-fftweets_count%>%
   arrange(desc(n))
 fftweets_count_subset<-fftweets_count2[1:15, ]
 fastfood_word<-ggplot(fftweets_count_subset, aes(x=reorder(word, n), y=n))+
-  geom_bar(stat="identity", fill="orange")+
+  geom_bar(stat="identity")+
   coord_flip()+
   labs(title="Fastfood Related Words With Highest Frequency", y="frequency", x="")
 fastfood_word
@@ -852,12 +770,12 @@ bigram_counts <- bigrams_filtered %>%
   count(word1, word2, sort = TRUE)
 bigram_counts<-bigram_counts%>%
   filter(!(word2=="https"))
-bigram_counts<-bigram_counts[c(-1, -12), ]
+bigram_counts<-bigram_counts[c(-1, -11), ]
 
 #visualize network of bigrams
 library(igraph)
 bigram_graph <- bigram_counts %>%
-  filter(n > 1) %>%
+  filter(n > 2) %>%
   graph_from_data_frame()
 library(ggraph)
 set.seed(2017)
