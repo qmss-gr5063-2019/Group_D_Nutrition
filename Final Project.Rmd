@@ -80,7 +80,7 @@ plot4 <- ggplot(data = data_nation_ob, aes(x=YearStart, y=Data_Value,group=Gende
 ggplotly(plot4)
 ```
 
-From the graph, total obesity rate increases persistently from 2011 to 2017. As we can see, the overall male obesity rate is higher than female. 
+From the graph, the total obesity rate increases from 27.4% to 30.1%. Moreover, the overall male obesity rate is higher than female. 
 
 #### Over Year Line Graph by Education
 ```{r}
@@ -91,13 +91,13 @@ plot6 <- ggplot(data = data_nation_ob_edu, aes(x=YearStart, y=Data_Value,
                                                   group=Education)) +
   geom_line(aes(color=Education))+
   labs(x = "Year",y = "Obesity Rate",
-       title = "Obesity Rate from 2011 to 2017 by Educaiton")  + 
+       title = "Obesity Rate from 2011 to 2017 by Educaiton Groups")  + 
   scale_color_brewer(palette="Blues") +
   theme_minimal()
 ggplotly(plot6)
 ```
 
-People with higher degree tend to have lower obesity rate, and the obesity rate of people with colledge degree is the lowest. 
+People with higher degree tend to have lower obesity rate, and the obesity rate of people with college degree is the lowest. 
 
 #### Over Year Line Graph by Age
 ```{r}
@@ -108,13 +108,13 @@ plot7 <- ggplot(data = data_nation_ob_age, aes(x=YearStart, y=Data_Value,
                                                   group=`Age(years)`)) +
   geom_line(aes(color=`Age(years)`))+
   labs(x = "Year",y = "Obesity Rate",
-       title = "Obesity Rate from 2011 to 2017 by age") + 
+       title = "Obesity Rate from 2011 to 2017 by Age Groups") + 
   scale_color_brewer(palette="Blues")+
   theme_minimal()
 ggplotly(plot7)
 ```
 
-This graph shows that middle-age groups from 35 to 64 tend to have the highest obsesity rate, while the young adults with age from 18 to 24 have the lowest obesity rate. 
+This graph shows that middle-age groups from 35 to 64 tend to have the highest obesity rate, while the young adults with age from 18 to 24 have the lowest obesity rate. 
 
 #### Over Year Line Graph by Income
 ```{r}
@@ -125,7 +125,7 @@ plot8 <- ggplot(data = data_nation_ob_inc, aes(x=YearStart, y=Data_Value,
                                                   group=Income)) +
   geom_line(aes(color=Income))+
   labs(x = "Year",y = "Obesity Rate",
-       title = "Obesity Rate from 2011 to 2017  by income") + 
+       title = "Obesity Rate from 2011 to 2017  by Income Groups") + 
   scale_color_brewer(palette="Blues")+
   theme_minimal()
 ggplotly(plot8)
@@ -159,33 +159,6 @@ West Virginia has the highest obesity rate with the value 38.1%, while Colorado 
 ### Physical Activities
 
 ```{r}
-data_nation_ac <- data_nation %>%
-  filter(QuestionID == "Q043") %>%
-    filter(!is.na(Total)|!is.na(Gender))
-
-data_nation_ac$Gender <- ifelse(is.na(data_nation_ac$Gender), data_nation_ac$Total, data_nation_ac$Gender)
-
-plot4 <- ggplot(data = data_nation_ob, aes(x=YearStart, y=Data_Value,group=Gender)) +
-  geom_line(aes(color=Gender))+labs(x = "Year",y = "Obesity Rate",
-                   title = "Obesity Rate from 2011 to 2017") +
-  scale_color_manual(values=c("#FFDAB9","#1E90FF","black")) +
-  theme_minimal()
-ggplotly(plot4)
-
-plot13 <- ggplot(data = data_nation_ac, aes(x=YearStart, y=Data_Value,group=Gender)) +
-  geom_line(aes(color=Gender))+labs(x = "Year",
-                   y = "Physical Activities Rate",
-                   title = "Percent of Adults Who Achieve Physical Activity")+
-  scale_color_manual(values=c("#FFDAB9","#1E90FF","black")) +
-  theme_minimal()
-ggplotly(plot13)
-```
-
-The total physical activities rate is falling from 2011 to 2017. Physical activity rate for male is higher than female.
-
-#### State in the Percentage of Physical Activities in 2017
-
-```{r}
 data_ac <- data %>%
   filter(QuestionID == "Q043" & YearStart == 2017) %>%
   select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
@@ -206,31 +179,6 @@ ggplotly(plot16)
 ```
 
 Vermont has the highest physical activity rate with the value 59.7%, while Purto Tico has the lowest with the value 19.6%
-
-### Nutrition
-
-```{r}
-data_ve <- data %>%
-  filter(QuestionID == "Q019" & YearStart == 2017) %>%
-  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
-         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
-  filter(Total == "Total" & !is.na(Data_Value))
-
-
-plot17 <- ggplot(data_ve,aes(x = reorder(LocationDesc,Data_Value),
-                                    y = Data_Value,fill = Data_Value)) +
-  geom_bar(stat = 'identity') +
-  geom_label(aes(label = Data_Value)) +
-  theme_minimal(8) +
-  labs(x = "State", y = "Vegetables Consuming Rate",
-title = "States in the percentage of obesity adults who report consuming vegetables less than one time daily in 2017") +
-  scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
-  guides(fill = FALSE) +
-  coord_flip()
-ggplotly(plot17)
-```
-
-Puerto Rico has the highest percentage of obesity adults who report consuming vegetables less than one time daily in 2017, while Maine has the lowest.
 
 ### Fast Food Restaurant
 
