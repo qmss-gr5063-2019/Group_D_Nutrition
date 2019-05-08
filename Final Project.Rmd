@@ -61,6 +61,21 @@ In this project, we aim to present a interactive display of obesity rates in adu
 
 ### Obesity Rate
 
+=======
+
+In this project, we aim to present a interactive display of obesity rates in adults across the different states in the U.S., and more pertinently, analyze how differences in the level of nutritional intake across the different states correlate with obesity rates. In addition, we also analyze the differences in the level of physical activities across the different states. Since it is widely known that one???s diet and physical exercises play a key role in affecting one???s weight and health, we believe that states with a widespread number of fast food outlets see greater occurrence of obesity as the presence of such unhealthy food options fuel adults living in these to adopt unhealthy diets, thereby neglecting their weight and health. In particular, our analysis consist of three major components:
+
+1. Obesity Rate
+2. Adult Nutrition and Physical Activities
+3. Fast Food Prevalence
+
+### Dataset
+1. CDC Nutrition, Physical Activity, and Obesity data
+2. Fast Food data
+3. Twitter API data
+
+### Obesity Rate
+
 #### Over Year Line Graph
 ```{r}
 data_nation <- data %>%
@@ -71,6 +86,10 @@ data_nation <- data %>%
 data_nation_ob <- data_nation %>%
   filter(QuestionID == "Q036") %>%
   filter(!is.na(Total)|!is.na(Gender))
+
+data_nation_ob$Gender <- ifelse(is.na(data_nation_ob$Gender), data_nation_ob$Total, data_nation_ob$Gender)
+
+
 
 data_nation_ob$Gender <- ifelse(is.na(data_nation_ob$Gender), data_nation_ob$Total, data_nation_ob$Gender)
 
@@ -325,7 +344,42 @@ map4=leaflet(obmap)%>%
   addLegend(pal=pal,values = ~obmap$severity, title = "2013 State Obesity Rate")%>%
   addTiles()
 
+
 ```
+
+```{r}
+#state obesity rates 2015
+
+ob15 <- data %>%
+  filter(QuestionID == "Q036" & YearStart == 2015) %>%
+  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
+         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
+  filter(Total == "Total")
+stateob=subset(ob15,LocationDesc!="Guam" & LocationDesc!="National")
+stateob$severity=ifelse(stateob$Data_Value<25,"Under 25%",ifelse(stateob$Data_Value<30,"25-30%"," 30% and up"))
+stateob$value=stateob$Data_Value
+stateob=transform(stateob, value = as.character(value))
+names(stateob)[names(stateob) == 'LocationDesc'] <- "NAME"
+obmap=merge(states,stateob,by="NAME")
+obmap=merge(obmap,lnglat,by="NAME")
+
+pal = colorFactor("Set1", domain = obmap@data$severity) 
+
+map4_1=leaflet(obmap)%>%
+  setView(-100.0382679, 42.3489054, zoom =3)%>%
+  addPolygons(color = "#9b9393", weight = 1, smoothFactor = 0.5,
+    opacity = 1.0, fillOpacity = 0.5,
+    fillColor = ~colorFactor("Set1",obmap@data$severity)(obmap@data$severity),
+    highlightOptions = highlightOptions(color = "white", weight = 2,
+      bringToFront = TRUE),popup=paste("State: ",obmap$NAME,"<br/>",
+                                 "Obesity Rate:",obmap$Data_Value,"<br/>"))%>%
+  addLegend(pal=pal,values = ~obmap$severity, title = "2015 State Obesity Rate")%>%
+  addTiles()
+
+```
+
+
+However, in 2017, the situation has changed dramatically. Only one state left on the map has less than 25% obesity rate. The map is presented below.
 
 ```{r}
 #state obesity rates 2015
@@ -547,7 +601,7 @@ colnames(fftweets_full)[89]<-"place_abbr"
 
 The barchart indicates that states like Texas, South Carolina, Montana and California tweet positively about fastfood, while states like Arizona, Colorado and Michigan tweet negatively about fastfood. 
 
-The plot of fastfood related words with the highest frequency are words related to actual food sold in fastfood chains, such as "taco", "whooper" and "sandwich". 
+The plot of fastfood related words with the highest frequency are words related to actual food sold in fastfood chains, such as "taco", "whooper" and "sandwich". This supports the previous finding that the most popular fastfood chains in the U.S. are Burger King and Taco Bell. 
 
 ```{r}
 #sentiment analysis of fastfood text 
