@@ -1,7 +1,7 @@
 ---
-title: "Final Project"
+title: "Obesity and Nutrition in the United States"
 author: "Cherie Yu, Qinyao Xia, Allison Jiang"
-date: "4/22/2019"
+date: "5/8/2019"
 output: html_document
 ---
 
@@ -43,27 +43,11 @@ data=read_csv("Nutrition__Physical_Activity__and_Obesity_-_Behavioral_Risk_Facto
 fastfood <- read_csv("FastFoodRestaurants.csv")
 
 states <- readOGR("shp/cb_2013_us_state_20m.shp",
-  layer = "cb_2013_us_state_20m", GDAL1_integer64_policy = TRUE)
+  layer = "cb_2013_us_state_20m", GDAL1_integer64_policy = TRUE, verbose = FALSE)
 ```
 
-# Obesity and Nutrition in the United States
 
-In this project, we aim to present a interactive display of obesity rates in adults across the different states in the U.S., and more pertinently, analyze how differences in the level of nutritional intake across the different states correlate with obesity rates. In addition, we also analyze the differences in the level of physical activities across the different states. Since it is widely known that one???s diet and physical exercises play a key role in affecting one???s weight and health, we believe that states with a widespread number of fast food outlets see greater occurrence of obesity as the presence of such unhealthy food options fuel adults living in these to adopt unhealthy diets, thereby neglecting their weight and health. In particular, our analysis consist of three major components:
-
-1. Obesity Rate
-2. Adult Nutrition and Physical Activities
-3. Fast Food Prevalence
-
-### Dataset
-1. CDC Nutrition, Physical Activity, and Obesity data
-2. Fast Food data
-3. Twitter API data
-
-### Obesity Rate
-
-=======
-
-In this project, we aim to present a interactive display of obesity rates in adults across the different states in the U.S., and more pertinently, analyze how differences in the level of nutritional intake across the different states correlate with obesity rates. In addition, we also analyze the differences in the level of physical activities across the different states. Since it is widely known that one???s diet and physical exercises play a key role in affecting one???s weight and health, we believe that states with a widespread number of fast food outlets see greater occurrence of obesity as the presence of such unhealthy food options fuel adults living in these to adopt unhealthy diets, thereby neglecting their weight and health. In particular, our analysis consist of three major components:
+In this project, we aim to present a interactive display of obesity rates in adults across the different states in the U.S., and more pertinently, analyze how differences in the level of nutritional intake across the different states correlate with obesity rates. In addition, we also analyze the differences in the level of physical activities across the different states. Since it is widely known that one‘s diet and physical exercises play a key role in affecting one’s weight and health, we believe that states with a widespread number of fast food outlets see greater occurrence of obesity as the presence of such unhealthy food options fuel adults living in these to adopt unhealthy diets, thereby neglecting their weight and health. In particular, our analysis consist of three major components:
 
 1. Obesity Rate
 2. Adult Nutrition and Physical Activities
@@ -454,7 +438,7 @@ The grid shows the spread of obesity throughout the past 6 years. The red-shaded
 
 ### Obesity and Fastfood
 
-To further explore the relationship, we mapped the distribution of fastfood restaruant and State obesity level（2017）
+To further explore the relationship, we mapped the distribution of fastfood restaruant and State obesity level in 2017
 
 ```{r}
 pop <- paste("Name:",fastfood$name,"<br/>",
@@ -539,7 +523,7 @@ map8
 
 ```
 
-The vegetable intake graph shows the upper northern states have less than 15% people eating less veggie than once daily. All east coast except New York have only 15-20% resident eating less than once veggie. Whereas the south west US is has around 25-30% people eating vegetable less than once daily. Interestingly, Puerto Rico has more than 35% people eating vegetable less than one a day. Alaska on the other hand, is blue-shaded with 19% people eating veggie less than once/day.
+The vegetable intake graph shows the upper northern states have less than 15 percent people eating less veggie than once daily. All east coast except New York have only 15-20 percent resident eating less than once veggie. Whereas the south west US is has around 25-30 percent people eating vegetable less than once daily. Interestingly, Puerto Rico has more than 35 percent people eating vegetable less than one a day. Alaska on the other hand, is blue-shaded with 19 percemt people eating veggie less than once every day.
 
 ###Text Analysis
 We collected text data from twitter related to fastfood, obesity and diet that is relevant to our project. 
@@ -667,6 +651,7 @@ fastfood_word
 ```
 
 For tweets related to obesity and diet, the word cloud shows words related to health (such as workout, body and weight), diet (such as vegan, coke and keto) and obesity related diseases such as diabetes. This suggests that people who talk about obesity and diet related topics are generally concerned about obesity and seek to improve their lifestyle and diets as obesity prevention efforts. 
+
 The two scatterplots plot the relationship between obesity rate of each of the U.S. state and the overall sentiment of the twitter text related to obesity. One would assume a positive relationship between obesity rate and sentiment towards obesity, such that states with higher occurrence of obesity have tweets that display a more positive sentiment towards obesity. The two lexicon classifications we used are AFINN and Bing. From the plots, we do not see a clear linear relationship between obesity rate and text sentiment. Instead, both plot suggests a quadratic relationship between obesity rate and text sentiment, such that states with the highest obesity rates display the more extreme sentiments, both positive and negative, toward obesity, as compared to states with low obesity rates. 
 
 The second wordcloud shows all the negative words related to obesity and diet related tweets. It seems to be that people who tweet about obesity and diet are most concerned with the adverse health complications associated with obesity. The words with the highest frequencies include kill, risk, death and cancer etc which are all extremely negative words related to health issues due to obesity.
@@ -788,6 +773,7 @@ word_plot<-ggplot(obcount_combined, aes(x=reorder(word, n), y=n, fill=cat))+
 ```
 
 Next, we explore if there are differences in the words that people from states with high and low obesity rates tweet. The graph of the log odds ratio of tweets from states with high obesity rate over states with low obesity rate reveals that people from states with high obesity rates are more likely to tweet highly extreme and negative words associated with obesity as compared to people from states with low obesity rate. This include words such as "risk", "disease" and "death". In comparison, people from states with low obesity rate tend to tweet content related to adoption of healthy lifestyles and diet as compared to people from states with high obesity rate. This include words like "read", "calorie" and "nutrient". This indicates that people from states with low obesity rates are more concerned with maintaining their health and weight as compared to people from states with high obesity rates. 
+
 ```{r}
 #Are there differences in words that ppl tweet?
 library(tidyr)
