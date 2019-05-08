@@ -33,6 +33,8 @@ library(plotly)
 library(rgdal)
 library(leaflet)
 library(wordcloud)
+library(mapview)
+library(maps)
 ```  
 
 ```{R}
@@ -44,56 +46,161 @@ states <- readOGR("shp/cb_2013_us_state_20m.shp",
   layer = "cb_2013_us_state_20m", GDAL1_integer64_policy = TRUE)
 ```
 
+# Obesity and Nutrition in the United States
+
+In this project, we aim to present a interactive display of obesity rates in adults across the different states in the U.S., and more pertinently, analyze how differences in the level of nutritional intake across the different states correlate with obesity rates. In addition, we also analyze the differences in the level of physical activities across the different states. Since it is widely known that one???s diet and physical exercises play a key role in affecting one???s weight and health, we believe that states with a widespread number of fast food outlets see greater occurrence of obesity as the presence of such unhealthy food options fuel adults living in these to adopt unhealthy diets, thereby neglecting their weight and health. In particular, our analysis consist of three major components:
+
+1. Obesity Rate
+2. Adult Nutrition and Physical Activities
+3. Fast Food Prevalence
+
+### Dataset
+1. CDC Nutrition, Physical Activity, and Obesity data
+2. Fast Food data
+3. Twitter API data
+
+### Obesity Rate
+
+#### Over Year Line Graph
 ```{r}
-table(data$YearStart)
-table(data$YearEnd)
+data_nation <- data %>%
+  filter(LocationDesc == "National") %>%
+  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
+         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)
+
+data_nation_ob <- data_nation %>%
+  filter(QuestionID == "Q036") %>%
+  filter(!is.na(Total)|!is.na(Gender))
+
+data_nation_ob$Gender <- ifelse(is.na(data_nation_ob$Gender), data_nation_ob$Total, data_nation_ob$Gender)
+
+plot4 <- ggplot(data = data_nation_ob, aes(x=YearStart, y=Data_Value,group=Gender)) +
+  geom_line(aes(color=Gender))+labs(x = "Year",y = "Obesity Rate",
+                   title = "Obesity Rate from 2011 to 2017") +
+  scale_color_manual(values=c("#FFDAB9","#1E90FF","black")) +
+  theme_minimal()
+ggplotly(plot4)
 ```
 
+From the graph, the total obesity rate increases from 27.4% to 30.1%. Moreover, the overall male obesity rate is higher than female. 
+
+#### Over Year Line Graph by Education
 ```{r}
-table(data$LocationAbbr)
-table(data$LocationDesc)
+data_nation_ob_edu <- data_nation %>%
+  filter(QuestionID == "Q036" & !is.na(Education))
+
+plot6 <- ggplot(data = data_nation_ob_edu, aes(x=YearStart, y=Data_Value,
+                                                  group=Education)) +
+  geom_line(aes(color=Education))+
+  labs(x = "Year",y = "Obesity Rate",
+       title = "Obesity Rate from 2011 to 2017 by Educaiton Groups")  + 
+  scale_color_brewer(palette="Blues") +
+  theme_minimal()
+ggplotly(plot6)
 ```
 
+People with higher degree tend to have lower obesity rate, and the obesity rate of people with college degree is the lowest. 
+
+#### Over Year Line Graph by Age
 ```{r}
-table(data$Question)
+data_nation_ob_age <- data_nation %>%
+  filter(QuestionID == "Q036" & !is.na(`Age(years)`))
+
+plot7 <- ggplot(data = data_nation_ob_age, aes(x=YearStart, y=Data_Value,
+                                                  group=`Age(years)`)) +
+  geom_line(aes(color=`Age(years)`))+
+  labs(x = "Year",y = "Obesity Rate",
+       title = "Obesity Rate from 2011 to 2017 by Age Groups") + 
+  scale_color_brewer(palette="Blues")+
+  theme_minimal()
+ggplotly(plot7)
 ```
 
+This graph shows that middle-age groups from 35 to 64 tend to have the highest obesity rate, while the young adults with age from 18 to 24 have the lowest obesity rate. 
+
+#### Over Year Line Graph by Income
 ```{r}
-variable.names(data)
+data_nation_ob_inc <- data_nation %>%
+  filter(QuestionID == "Q036" & !is.na(Income))
+
+plot8 <- ggplot(data = data_nation_ob_inc, aes(x=YearStart, y=Data_Value,
+                                                  group=Income)) +
+  geom_line(aes(color=Income))+
+  labs(x = "Year",y = "Obesity Rate",
+       title = "Obesity Rate from 2011 to 2017  by Income Groups") + 
+  scale_color_brewer(palette="Blues")+
+  theme_minimal()
+ggplotly(plot8)
 ```
 
+This graph shows people with higher income tend to have lower obesity rate. 
 
-### Fast Food Data
+#### State in the Percentage of Obesity in 2017
 ```{r}
-fastfood_city <- fastfood %>%
-  group_by(city) %>%
-  summarise(count = n()) %>% 
-  arrange(desc(count))
-plot1 <- ggplot(fastfood_city[1:20,],aes(x = reorder(city,count),y = count,fill = count)) + geom_bar(stat = 'identity') +
-  geom_label(aes(label = count)) +
+data_ob <- data %>%
+  filter(QuestionID == "Q036" & YearStart == 2017) %>%
+  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
+         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
+  filter(Total == "Total" & !is.na(Data_Value))
+
+
+plot10 <- ggplot(data_ob,aes(x = reorder(LocationDesc,Data_Value),
+                                    y = Data_Value,fill = Data_Value)) +
+  geom_bar(stat = 'identity') +
+  geom_label(aes(label = Data_Value)) +
   theme_minimal(8) +
-  labs(x = "City",y = "Count",title = "Top 20 cities in the number of fast-food restaurants") +
+  labs(x = "State", y = "Obesity Rate",title = "States in the Percentage of Obesity in 2017") +
   scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
   guides(fill = FALSE) +
   coord_flip()
-ggplotly(plot1)
+ggplotly(plot10)
 ```
+
+West Virginia has the highest obesity rate with the value 38.1%, while Colorado has the lowest with the value 22.6%
+
+### Physical Activities
+
+```{r}
+data_ac <- data %>%
+  filter(QuestionID == "Q043" & YearStart == 2017) %>%
+  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
+         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
+  filter(Total == "Total" & !is.na(Data_Value)) 
+
+
+plot16 <- ggplot(data_ac,aes(x = reorder(LocationDesc,Data_Value),
+                                    y = Data_Value,fill = Data_Value)) +
+  geom_bar(stat = 'identity') +
+  geom_label(aes(label = Data_Value)) +
+  theme_minimal(8) +
+  labs(x = "State", y = "Physical Activities Rate",title = "States in the Percentage of Adults Who Do Physical Activities in 2017") +
+  scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
+  guides(fill = FALSE) +
+  coord_flip()
+ggplotly(plot16)
+```
+
+Vermont has the highest physical activity rate with the value 59.7%, while Purto Tico has the lowest with the value 19.6%
+
+### Fast Food Restaurant
 
 ```{r}
 fastfood_province <- fastfood %>%
   group_by(province) %>% 
   summarise("count" = n()) %>% 
   arrange(desc(count))
-plot2 <- ggplot(fastfood_province[1:20,],aes(x = reorder(province,count),y = count,fill = count)) +
+plot2 <- ggplot(fastfood_province,aes(x = reorder(province,count),y = count,fill = count)) +
   geom_bar(stat = 'identity') +
   geom_label(aes(label = count)) +
   theme_minimal(8) +
-  labs(x = "Province", y = "Count",title = "Top 20 province in the number of fast-food restaurants") +
+  labs(x = "State", y = "Count",title = "States in the Number of Fast-Food Restaurants") +
   scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
   guides(fill = FALSE) +
   coord_flip()
 ggplotly(plot2)
 ```
+
+There are 676 fast food restaurants in California.
 
 ```{r}
 fastfood_name <- fastfood %>%
@@ -104,257 +211,17 @@ plot3 <- ggplot(fastfood_name[1:20,],aes(x = reorder(name,count),y = count,fill 
   geom_bar(stat = 'identity') +
   geom_label(aes(label = count)) +
   theme_minimal(8) +
-  labs(x = "Name",y = "Count",title = "The top 20 brands in the number of fast-food restaurants") +
+  labs(x = "Name",y = "Count",title = "The top 20 Brands in the Number of Fast-Food Restaurants") +
   scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
   guides(fill = FALSE) +
   coord_flip()
 ggplotly(plot3)
 ```
 
-### Nutrition Data
-
-#### over year line graph
-```{r}
-data_nation <- data %>%
-  filter(LocationDesc == "National") %>%
-  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
-         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)
-
-data_nation_ob <- data_nation %>%
-  filter(QuestionID == "Q036" & Total == "Total")
-
-plot4 <- ggplot(data = data_nation_ob, aes(x=YearStart, y=Data_Value)) +
-  geom_line()+labs(x = "Year",y = "Percentage of obesity",
-                   title = "Percentage of obesity in the US over time")
-ggplotly(plot4)
-```
-
-```{r}
-data_nation_ob_gender <- data_nation %>%
-  filter(QuestionID == "Q036" & !is.na(Gender))
-
-plot5 <- ggplot(data = data_nation_ob_gender, aes(x=YearStart, y=Data_Value,
-                                                  group=Gender)) +
-  geom_line(aes(color=Gender))+
-  labs(x = "Year",y = "Percentage of obesity",
-       title = "Percentage of obesity in the US over time by gender") 
-ggplotly(plot5)
-```
-
-```{r}
-data_nation_ob_edu <- data_nation %>%
-  filter(QuestionID == "Q036" & !is.na(Education))
-
-plot6 <- ggplot(data = data_nation_ob_edu, aes(x=YearStart, y=Data_Value,
-                                                  group=Education)) +
-  geom_line(aes(color=Education))+
-  labs(x = "Year",y = "Percentage of obesity",
-       title = "Percentage of obesity in the US over time by education")  + 
-  scale_color_brewer(palette="Blues")
-ggplotly(plot6)
-```
-
-```{r}
-data_nation_ob_age <- data_nation %>%
-  filter(QuestionID == "Q036" & !is.na(`Age(years)`))
-
-plot7 <- ggplot(data = data_nation_ob_age, aes(x=YearStart, y=Data_Value,
-                                                  group=`Age(years)`)) +
-  geom_line(aes(color=`Age(years)`))+
-  labs(x = "Year",y = "Percentage of obesity",
-       title = "Percentage of obesity in the US over time by age") + 
-  scale_color_brewer(palette="Blues")
-ggplotly(plot7)
-```
-
-```{r}
-data_nation_ob_inc <- data_nation %>%
-  filter(QuestionID == "Q036" & !is.na(Income))
-
-plot8 <- ggplot(data = data_nation_ob_inc, aes(x=YearStart, y=Data_Value,
-                                                  group=Income)) +
-  geom_line(aes(color=Income))+
-  labs(x = "Year",y = "Percentage of obesity",
-       title = "Percentage of obesity in the US over time by income") + 
-  scale_color_brewer(palette="Blues")
-ggplotly(plot8)
-```
-
-```{r}
-data_nation_ob_race <- data_nation %>%
-  filter(QuestionID == "Q036" & !is.na(`Race/Ethnicity`))
-
-plot9 <- ggplot(data = data_nation_ob_race, aes(x=YearStart, y=Data_Value,
-                                                  group=`Race/Ethnicity`)) +
-  geom_line(aes(color=`Race/Ethnicity`))+
-  labs(x = "Year",y = "Percentage of obesity",
-       title = "Percentage of obesity in the US over time by race") 
-ggplotly(plot9)
-```
-
-### State in 2014
-```{r}
-data_ob <- data %>%
-  filter(QuestionID == "Q036" & YearStart == 2014) %>%
-  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
-         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
-  filter(Total == "Total")
+The most common fast food restaurants are McDonald's, Burger King,and Taco Bell.
 
 
-plot10 <- ggplot(data_ob[1:20,],aes(x = reorder(LocationDesc,Data_Value),
-                                    y = Data_Value,fill = Data_Value)) +
-  geom_bar(stat = 'identity') +
-  geom_label(aes(label = Data_Value)) +
-  theme_minimal(8) +
-  labs(x = "State", y = "Percentage of obesity",title = "Top 20 state in the percentage of obesity in 2014") +
-  scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
-  guides(fill = FALSE) +
-  coord_flip()
-ggplotly(plot10)
-```
-
-```{r}
-data_ob_gen <- data %>%
-  filter(QuestionID == "Q036" & YearStart == 2014) %>%
-  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
-         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
-  filter(!is.na(Gender))
-
-
-plot11 <- ggplot(data_ob_gen[1:20,],aes(x = reorder(LocationDesc,Data_Value),
-                                    y = Data_Value,fill = Gender)) +
-  geom_bar(stat = 'identity', position=position_dodge())  +
-  labs(x = "State", y = "Percentage of obesity",title = "Top 20 state in the percentage of obesity in 2014 by gender")  +
-  coord_flip()
-ggplotly(plot11)
-```
-
-```{r}
-data_ob_edu <- data %>%
-  filter(QuestionID == "Q036" & YearStart == 2014) %>%
-  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
-         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
-  filter(!is.na(Education))
-
-plot12 <- ggplot(data_ob_edu[1:40,],aes(x = reorder(LocationDesc,Data_Value),
-                                    y = Data_Value,fill = Data_Value)) +
-  geom_bar(stat = 'identity') +
-  geom_label(aes(label = Data_Value)) +
-  theme_minimal(8) +
-  labs(x = "State", y = "Percentage of obesity",title = "Top 20 state in the percentage of obesity in 2014 by education") +
-  scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
-  guides(fill = FALSE) +
-  coord_flip() +
-  facet_wrap("Education")
-ggplotly(plot12)
-```
-
-```{r}
-data_nation_ac <- data_nation %>%
-  filter(QuestionID == "Q043" & Total == "Total")
-
-plot13 <- ggplot(data = data_nation_ac, aes(x=YearStart, y=Data_Value)) +
-  geom_line()+labs(x = "Year",y = "Percentage of adults who achieve physical activities",
-                   title = "Percent of adults who achieve at least 150 minutes a week 
-                   of moderate-intensity aerobic physical activity or 75 minutes a 
-                   week of vigorous-intensity aerobic activity (or an equivalent 
-                   combination) ")
-ggplotly(plot13)
-```
-
-```{r}
-data_nation_ac_gender <- data_nation %>%
-  filter(QuestionID == "Q043" & !is.na(Gender))
-
-plot14 <- ggplot(data = data_nation_ac_gender, aes(x=YearStart, y=Data_Value,
-                                                  group=Gender)) +
-  geom_line(aes(color=Gender))+
-  labs(x = "Year",y = "Percentage of obesity",
-       title = "Percentage of adults who do physical activities") 
-ggplotly(plot14)
-```
-
-```{r}
-data_nation_ac_edu <- data_nation %>%
-  filter(QuestionID == "Q043" & !is.na(Education))
-
-plot15 <- ggplot(data = data_nation_ac_edu, aes(x=YearStart, y=Data_Value,
-                                                  group=Education)) +
-  geom_line(aes(color=Education))+
-  labs(x = "Year",y = "Percentage of obesity",
-       title = "Percentage of adults who do physical activities")  + 
-  scale_color_brewer(palette="Blues")
-ggplotly(plot15)
-```
-
-```{r}
-data_ac <- data %>%
-  filter(QuestionID == "Q043" & YearStart == 2013) %>%
-  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
-         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
-  filter(Total == "Total")
-
-
-plot16 <- ggplot(data_ac[1:20,],aes(x = reorder(LocationDesc,Data_Value),
-                                    y = Data_Value,fill = Data_Value)) +
-  geom_bar(stat = 'identity') +
-  geom_label(aes(label = Data_Value)) +
-  theme_minimal(8) +
-  labs(x = "State", y = "Percentage of adults who do physical activities",title = "Top 20 state in the percentage of adults who do physical activities in 2013") +
-  scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
-  guides(fill = FALSE) +
-  coord_flip()
-ggplotly(plot16)
-```
-
-```{r}
-data_ve <- data %>%
-  filter(QuestionID == "Q019" & YearStart == 2017) %>%
-  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
-         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
-  filter(Total == "Total")
-
-
-plot17 <- ggplot(data_ve[1:20,],aes(x = reorder(LocationDesc,Data_Value),
-                                    y = Data_Value,fill = Data_Value)) +
-  geom_bar(stat = 'identity') +
-  geom_label(aes(label = Data_Value)) +
-  theme_minimal(8) +
-  labs(x = "State", y = "Percent of adults who report consuming 
-                   vegetables less than one time daily",
-title = "Top 20 state in the percentage of obesity adults who report 
-consuming vegetables less than one time daily in 2017") +
-  scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
-  guides(fill = FALSE) +
-  coord_flip()
-ggplotly(plot17)
-```
-
-```{r}
-data_ve_edu <- data %>%
-  filter(QuestionID == "Q019" & YearStart == 2017) %>%
-  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
-         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
-  filter(!is.na(Education))
-
-plot18 <- ggplot(data_ve_edu[1:40,],aes(x = reorder(LocationDesc,Data_Value),
-                                    y = Data_Value,fill = Data_Value)) +
-  geom_bar(stat = 'identity') +
-  geom_label(aes(label = Data_Value)) +
-  theme_minimal(8) +
-  labs(x = "State", y = "Percentage of obesity",title = "Top 20 state in the percentage of obesity in 2014 by education") +
-  scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
-  guides(fill = FALSE) +
-  coord_flip() +
-  facet_wrap("Education")
-ggplotly(plot18)
-```
-
-```{r}
-library(maps)
-```
-
-Mapping fastfood restaurants 
+### Mapping fastfood restaurants 
 ```{r}
 fastfood$longitude=ifelse(fastfood$longitude>0,0-fastfood$longitude,fastfood$longitude)
 map1=fastfood%>%filter(latitude>25 & latitude<50 & longitude < -50 ) %>% ggplot(aes(x = longitude, y = latitude))+
@@ -365,6 +232,9 @@ map1=fastfood%>%filter(latitude>25 & latitude<50 & longitude < -50 ) %>% ggplot(
 ggplotly(map1)
 ```
 
+To understand the distribution of fastfood restaurants in the US, we visualized the random sample of 10,000 fast food restaurants from the Datafiniti dataset. The graph focus on the contiguous U.S. land and shows a disporportional dense distribution of fastfood restaurant in the East and West coast than Mid America, which is understandable as coastal area has higher population density. We are interested in looking for difference between distribution among top popular restaurants.
+
+### Fast Food Restaurant Distribution for The Top 4
 ```{r}
 map2=fastfood%>%filter(latitude>25 & latitude<50 & longitude < -50 ) %>% 
   filter(name  %in% c("McDonald's","Burger King","Taco Bell","Wendy's"))%>%
@@ -376,6 +246,8 @@ map2=fastfood%>%filter(latitude>25 & latitude<50 & longitude < -50 ) %>%
   facet_wrap("name")
 ggplotly(map2)
 ```
+
+This plot shows McDonal's is popular everywhere while Burger King is more popular in the north, and Taco Bell is more popular in the Mid America area with density higher in states like Illionois, Indiana, Ohio and Wisconsin.
 
 ```{r}
 lnglat=data %>%filter(QuestionID == "Q036" & YearStart == 2017) %>%
@@ -390,7 +262,11 @@ lnglat=transform(lnglat, lat = as.numeric(lat),
                lng = as.numeric(lng))
 ```
 
-state obesity rates 2011
+
+### Mapping Obesity in the US
+
+We would like to examine the first year available (2011) data on the Obesity rate across the U.S.
+
 ```{r}
 ob11 <- data %>%
   filter(QuestionID == "Q036" & YearStart == 2011) %>%
@@ -398,37 +274,38 @@ ob11 <- data %>%
          Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
   filter(Total == "Total")
 stateob=subset(ob11,LocationDesc!="Guam" & LocationDesc!="National")
-stateob$severity=ifelse(stateob$Data_Value<25,"Under 25",ifelse(stateob$Data_Value<30,"25-30"," 30  and up"))
+stateob$severity=ifelse(stateob$Data_Value<25,"Under 25%",ifelse(stateob$Data_Value<30,"25-30%"," 30% and up"))
 stateob$value=stateob$Data_Value
 stateob=transform(stateob, value = as.character(value))
 names(stateob)[names(stateob) == 'LocationDesc'] <- "NAME"
 obmap=merge(states,stateob,by="NAME")
 obmap=merge(obmap,lnglat,by="NAME")
-
 pal = colorFactor("Set1", domain = obmap@data$severity) 
 
 map3=leaflet(obmap)%>%
-  setView(-100.0382679, 42.3489054, zoom =4)%>%
+  setView(-100.0382679, 42.3489054, zoom =3)%>%
   addPolygons(color = "#9b9393", weight = 1, smoothFactor = 0.5,
     opacity = 1.0, fillOpacity = 0.5,
     fillColor = ~colorFactor("Set1",obmap@data$severity)(obmap@data$severity),
     highlightOptions = highlightOptions(color = "white", weight = 2,
       bringToFront = TRUE),popup=paste("State: ",obmap$NAME,"<br/>",
                                  "Obesity Rate:",obmap$Data_Value,"<br/>"))%>%
-  addLegend(pal=pal,values = ~obmap$severity, title = "State Obesity Rate")%>%
-  addCircles(lat=obmap$lat,lng=obmap$lng,label = ~`value`,weight = 2, radius=0.1, color="#ffa500", stroke = TRUE,labelOptions = labelOptions(noHide = T,opacity = 0.8))%>%
+  addLegend(pal=pal,values = ~obmap$severity, title = "2011 State Obesity Rate")%>%
   addTiles()
 map3
 ```
-state obesity rates 2014
+
+The obesity rates was splited into under 25%, 25-30% and 30% up groups. In 2011, 9 states are in the green shade, meaning their obesity rate was under 25%.
+
 ```{r}
-ob14 <- data %>%
-  filter(QuestionID == "Q036" & YearStart == 2014) %>%
+#state obesity rates 2013
+ob13 <- data %>%
+  filter(QuestionID == "Q036" & YearStart == 2013) %>%
   select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
          Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
   filter(Total == "Total")
-stateob=subset(ob14,LocationDesc!="Guam" & LocationDesc!="National")
-stateob$severity=ifelse(stateob$Data_Value<25,"Under 25",ifelse(stateob$Data_Value<30,"25-30"," 30  and up"))
+stateob=subset(ob13,LocationDesc!="Guam" & LocationDesc!="National")
+stateob$severity=ifelse(stateob$Data_Value<25,"Under 25%",ifelse(stateob$Data_Value<30,"25-30%"," 30% and up"))
 stateob$value=stateob$Data_Value
 stateob=transform(stateob, value = as.character(value))
 names(stateob)[names(stateob) == 'LocationDesc'] <- "NAME"
@@ -438,18 +315,51 @@ obmap=merge(obmap,lnglat,by="NAME")
 pal = colorFactor("Set1", domain = obmap@data$severity) 
 
 map4=leaflet(obmap)%>%
-  setView(-100.0382679, 42.3489054, zoom =4)%>%
+  setView(-100.0382679, 42.3489054, zoom =3)%>%
   addPolygons(color = "#9b9393", weight = 1, smoothFactor = 0.5,
     opacity = 1.0, fillOpacity = 0.5,
     fillColor = ~colorFactor("Set1",obmap@data$severity)(obmap@data$severity),
     highlightOptions = highlightOptions(color = "white", weight = 2,
       bringToFront = TRUE),popup=paste("State: ",obmap$NAME,"<br/>",
                                  "Obesity Rate:",obmap$Data_Value,"<br/>"))%>%
-  addLegend(pal=pal,values = ~obmap$severity, title = "State Obesity Rate")%>%
-  addCircles(lat=obmap$lat,lng=obmap$lng,label = ~`value`,weight = 2, radius=0.1, color="#ffa500", stroke = TRUE,labelOptions = labelOptions(noHide = T,opacity = 0.8))%>%
+  addLegend(pal=pal,values = ~obmap$severity, title = "2013 State Obesity Rate")%>%
   addTiles()
-map4
+
 ```
+
+```{r}
+#state obesity rates 2015
+
+ob15 <- data %>%
+  filter(QuestionID == "Q036" & YearStart == 2015) %>%
+  select(YearStart, LocationDesc, Class, Question, Data_Value, Sample_Size, 
+         Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
+  filter(Total == "Total")
+stateob=subset(ob15,LocationDesc!="Guam" & LocationDesc!="National")
+stateob$severity=ifelse(stateob$Data_Value<25,"Under 25%",ifelse(stateob$Data_Value<30,"25-30%"," 30% and up"))
+stateob$value=stateob$Data_Value
+stateob=transform(stateob, value = as.character(value))
+names(stateob)[names(stateob) == 'LocationDesc'] <- "NAME"
+obmap=merge(states,stateob,by="NAME")
+obmap=merge(obmap,lnglat,by="NAME")
+
+pal = colorFactor("Set1", domain = obmap@data$severity) 
+
+map4_1=leaflet(obmap)%>%
+  setView(-100.0382679, 42.3489054, zoom =3)%>%
+  addPolygons(color = "#9b9393", weight = 1, smoothFactor = 0.5,
+    opacity = 1.0, fillOpacity = 0.5,
+    fillColor = ~colorFactor("Set1",obmap@data$severity)(obmap@data$severity),
+    highlightOptions = highlightOptions(color = "white", weight = 2,
+      bringToFront = TRUE),popup=paste("State: ",obmap$NAME,"<br/>",
+                                 "Obesity Rate:",obmap$Data_Value,"<br/>"))%>%
+  addLegend(pal=pal,values = ~obmap$severity, title = "2015 State Obesity Rate")%>%
+  addTiles()
+
+```
+
+
+However, in 2017, the situation has changed dramatically. Only one state left on the map has less than 25% obesity rate. The map is presented below.
 
 ```{r}
 ob17 <- data %>%
@@ -458,7 +368,7 @@ ob17 <- data %>%
          Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
   filter(Total == "Total")
 stateob=subset(ob17,LocationDesc!="Guam" & LocationDesc!="National")
-stateob$severity=ifelse(stateob$Data_Value<25,"Under 25",ifelse(stateob$Data_Value<30,"25-30"," 30  and up"))
+stateob$severity=ifelse(stateob$Data_Value<25,"Under 25%",ifelse(stateob$Data_Value<30,"25-30%"," 30% and up"))
 stateob$value=stateob$Data_Value
 stateob=transform(stateob, value = as.character(value))
 names(stateob)[names(stateob) == 'LocationDesc'] <- "NAME"
@@ -468,31 +378,44 @@ obmap=merge(obmap,lnglat,by="NAME")
 pal = colorFactor("Set1", domain = obmap@data$severity) 
 
 map5=leaflet(obmap)%>%
-  setView(-100.0382679, 42.3489054, zoom =4)%>%
+  setView(-100.0382679, 42.3489054, zoom =3)%>%
   addPolygons(color = "#9b9393", weight = 1, smoothFactor = 0.5,
     opacity = 1.0, fillOpacity = 0.5,
     fillColor = ~colorFactor("Set1",obmap@data$severity)(obmap@data$severity),
     highlightOptions = highlightOptions(color = "white", weight = 2,
       bringToFront = TRUE),popup=paste("State: ",obmap$NAME,"<br/>",
                                  "Obesity Rate:",obmap$Data_Value,"<br/>"))%>%
-  addLegend(pal=pal,values = ~obmap$severity, title = "State Obesity Rate")%>%
-  addCircles(lat=obmap$lat,lng=obmap$lng,label = ~`value`,weight = 2, radius=0.1, color="#ffa500", stroke = TRUE,labelOptions = labelOptions(noHide = T,opacity = 0.8))%>%
+  addLegend(pal=pal,values = ~obmap$severity, title = "2017 State Obesity Rate")%>%
   addTiles()
 map5
 ```
 
-obstate and distribution of Fastfood （2017）
+Therefore We would like to examine the changes over the past period.
+
+```{R}
+latticeView(map3,map4,map4_1,map5)
+```
+
+The grid shows the spread of obesity throughout the past 6 years. The red-shaded and blue-shaded states gradually increase and took over states with low obesity rate. In 2013, there are 6 green states left, in 2015, there is only 5. And the 2017 shows only colorado Stands as the only state with Obesity rate under 25% at 22.6%.
+
+### Obesity and Fastfood
+
+To further explore the relationship, we mapped the distribution of fastfood restaruant and State obesity level（2017）
+
 ```{r}
 pop <- paste("Name:",fastfood$name,"<br/>",
              "City:",fastfood$city,"<br/>",
-             "Province:",fastfood$province,"<br/>",
-             "PostalCode:",fastfood$postalCode,"<br/>")
-map6=map5%>%
-  addCircleMarkers(lat = fastfood$latitude,lng = fastfood$longitude,popup = pop,weight = 2, radius=0.1,clusterOptions = markerClusterOptions())
+             "State:",fastfood$province,"<br/>")
+map6=map5%>%addTiles()%>%addCircleMarkers(lat = fastfood$latitude,lng = fastfood$longitude,popup = pop,weight = 2, radius=0.1,clusterOptions = markerClusterOptions())
 map6
 ```
 
-maybe exercise frequecy matters?
+By clustering the distribution of fastfood restaurants, we see that states with 30% and up obesity rate, indicated by the red shade, do have heavier concentration of fastfood restaurant in Middle and East America. However, high obesity state like Alaska does not have as much Fastfood Restaurant.
+
+### Fastfood and Exercise
+
+The finding lead to our stronger interest in explore the fastfood restaurant with other behavior. We would like to explore fastfood restaurant distributio and physical activity of the state residents.
+
 ```{r}
 ac17 <- data %>%
   filter(QuestionID == "Q043" & YearStart == 2017) %>%
@@ -500,7 +423,7 @@ ac17 <- data %>%
          Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
   filter(Total == "Total")
 stateac=subset(ac17,LocationDesc!="Guam" & LocationDesc!="National")
-stateac$level=ifelse(stateac$Data_Value<35,"Under 35",ifelse(stateac$Data_Value<40,"35-40",ifelse(stateac$Data_Value<45,"45-50",ifelse(stateac$Data_Value<55,"50-55","55 and up"))))
+stateac$level=ifelse(stateac$Data_Value<35,"Under 35%",ifelse(stateac$Data_Value<40,"35-40%",ifelse(stateac$Data_Value<45,"45-50%",ifelse(stateac$Data_Value<55,"50-55%","55% and up"))))
 stateac$value=stateac$Data_Value
 stateac=transform(stateac, value = as.character(value))
 names(stateac)[names(stateac) == 'LocationDesc'] <- "NAME"
@@ -518,12 +441,16 @@ map7=leaflet(acmap)%>%
                                  "Activity Rate:",acmap$Data_Value,"<br/>"))%>%
   addLegend(pal=pal,values = ~acmap$level, title = "State Activity Rate")%>%
   addTiles()%>%
-  addCircles(lat=obmap$lat,lng=obmap$lng,label = ~`value`,weight = 2, radius=0.1, color="#ffa500", stroke = TRUE,labelOptions = labelOptions(noHide = T,opacity = 0.8))%>%
-  addCircles(lat = fastfood$latitude,lng = fastfood$longitude,popup = pop,weight = 2, radius=40, color="#ffa500", stroke = TRUE, fillOpacity = 0.5)
+  addCircles(lat = fastfood$latitude,lng = fastfood$longitude,popup = pop,weight = 2, radius=40, color="#ffa500", stroke = TRUE, fillOpacity = 0.1)
 map7
 
 ```
 
+The fastfood and exercise map shows the states in Mid/south U.S has lower activity rate, and they are located in dense fastfood restaurant area as well. Northeastern US has activity rate around 50-55%, and the fast food restaurant distribution is also dense. the existance of fastfood does not decrease people exercise rates. The west coast has higher activity rate and they have lower distribution of fastfood restaurant. Alaska has high activity rate and low fastfood restaurant distribution. The only state has activity rate under 35% is Puerto Rico, but the data set does not have infomation regarding the fastfood restaurant here.
+
+### Vegetable intake and fastfood restaurant
+
+We would further explore whether fastfood restaurant distribution is closely related to state resident nutritional intake. We mapped the vegetable intake and the fastfood distribution.
 
 ```{r}
 ve17 <- data %>%
@@ -532,34 +459,36 @@ ve17 <- data %>%
          Total, `Age(years)`, Gender, Education, Income, `Race/Ethnicity`, QuestionID)%>%
   filter(Total == "Total")
 stateve=subset(ve17,LocationDesc!="Guam" & LocationDesc!="National")
-stateve$level=ifelse(stateve$Data_Value<15,"Under 15",ifelse(stateve$Data_Value<20,"15-20%",ifelse(stateve$Data_Value<25,"25-30%",ifelse(stateve$Data_Value<35,"30-35%","35% and up"))))
+stateve$level=ifelse(stateve$Data_Value<15,"0-15%",ifelse(stateve$Data_Value<20,"15-20%",ifelse(stateve$Data_Value<25,"25-30%",ifelse(stateve$Data_Value<35,"30-35%","35% and up"))))
 stateve$value=stateve$Data_Value
 stateve=transform(stateve, value = as.character(value))
 names(stateve)[names(stateve) == 'LocationDesc'] <- "NAME"
 vemap=merge(states,stateve,by="NAME")
 vemap=merge(vemap,lnglat,by="NAME")
 
-pal = colorFactor("Set2", domain = vemap@data$level) 
+pal = colorFactor("Set1", domain = vemap@data$level) 
 
 map8=leaflet(vemap)%>%
   setView(-100.0382679, 42.3489054, zoom =4)%>%
   addPolygons(color = "#9b9393", weight = 1, smoothFactor = 0.5,
     opacity = 1.0, fillOpacity = 0.5,
-    fillColor = ~colorFactor("Set2",vemap@data$level)(vemap@data$level),
+    fillColor = ~colorFactor("Set1",vemap@data$level)(vemap@data$level),
     highlightOptions = highlightOptions(color = "white", weight = 2,
       bringToFront = TRUE),popup=paste("State: ",vemap$NAME,"<br/>",
-                                 "Activity Rate:",vemap$Data_Value,"<br/>"))%>%
+                                 "Less than once Veggie Consumption:",vemap$Data_Value,"<br/>"))%>%
   addLegend(pal=pal,values = ~vemap$level, title = "Population consuming 
                    vegetables less than one time daily")%>%
   addTiles()%>%
-  addCircles(lat=obmap$lat,lng=obmap$lng,label = ~`value`,weight = 2, radius=0.1, color="#ffa500", stroke = TRUE,labelOptions = labelOptions(noHide = T,opacity = 0.8))%>%
-  addCircles(lat = fastfood$latitude,lng = fastfood$longitude,popup = pop, weight = 2, radius=40, color="#ffa500", stroke = TRUE, fillOpacity = 0.5)
+  addCircles(lat = fastfood$latitude,lng = fastfood$longitude,popup = pop, weight = 2, radius=40, color="#ffa500", stroke = TRUE, fillOpacity = 0.1)
 
 map8
 
 ```
 
+The vegetable intake graph shows the upper northern states have less than 15% people eating less veggie than once daily. All east coast except New York have only 15-20% resident eating less than once veggie. Whereas the south west US is has around 25-30% people eating vegetable less than once daily. Interestingly, Puerto Rico has more than 35% people eating vegetable less than one a day. Alaska on the other hand, is blue-shaded with 19% people eating veggie less than once/day.
 
+###Text Analysis
+We collected text data from twitter related to fastfood, obesity and diet that is relevant to our project. 
 
 ```{r}
 #Text Data
@@ -615,6 +544,10 @@ fftweets_location[29]<-"NV"
 fftweets_full<-cbind(fastfood_tweets, fftweets_location)
 colnames(fftweets_full)[89]<-"place_abbr"
 ```
+
+The barchart indicates that states like Texas, South Carolina, Montana and California tweet positively about fastfood, while states like Arizona, Colorado and Michigan tweet negatively about fastfood. 
+
+The plot of fastfood related words with the highest frequency are words related to actual food sold in fastfood chains, such as "taco", "whooper" and "sandwich". 
 
 ```{r}
 #sentiment analysis of fastfood text 
@@ -678,6 +611,11 @@ fastfood_word<-ggplot(fftweets_count_subset, aes(x=reorder(word, n), y=n))+
   labs(title="Fastfood Related Words With Highest Frequency", y="frequency", x="")
 fastfood_word
 ```
+
+For tweets related to obesity and diet, the word cloud shows words related to health (such as workout, body and weight), diet (such as vegan, coke and keto) and obesity related diseases such as diabetes. This suggests that people who talk about obesity and diet related topics are generally concerned about obesity and seek to improve their lifestyle and diets as obesity prevention efforts. 
+The two scatterplots plot the relationship between obesity rate of each of the U.S. state and the overall sentiment of the twitter text related to obesity. One would assume a positive relationship between obesity rate and sentiment towards obesity, such that states with higher occurrence of obesity have tweets that display a more positive sentiment towards obesity. The two lexicon classifications we used are AFINN and Bing. From the plots, we do not see a clear linear relationship between obesity rate and text sentiment. Instead, both plot suggests a quadratic relationship between obesity rate and text sentiment, such that states with the highest obesity rates display the more extreme sentiments, both positive and negative, toward obesity, as compared to states with low obesity rates. 
+
+The second wordcloud shows all the negative words related to obesity and diet related tweets. It seems to be that people who tweet about obesity and diet are most concerned with the adverse health complications associated with obesity. The words with the highest frequencies include kill, risk, death and cancer etc which are all extremely negative words related to health issues due to obesity.
 
 ```{r}
 #Obesity related tweets
@@ -754,11 +692,13 @@ ob_sentiments_bing2<- obtweets_count_state %>%
   spread(sentiment, pos)%>%
   mutate_all(~replace(., is.na(.), 0))
 
+set.seed(12345)
 wordcloud(words = ob_sentiments_bing2$word, freq = ob_sentiments_bing2$negative,
-          max.words=100, random.order=F, colors=brewer.pal(8, "Dark2"))
+          max.words=100, min.freq=1, random.order=F, colors=brewer.pal(8, "Dark2"))
 
 ```
 
+ 
 ```{r}
 #group states in to high, medium, low obesity rates
 obesity_rate2<-obesity_rate%>%
@@ -790,10 +730,10 @@ word_plot<-ggplot(obcount_combined, aes(x=reorder(word, n), y=n, fill=cat))+
   labs(title = "Highest Frequency words in from States with Different Levels of Obesity",
        caption = "Data from Twitter",
        x = NULL, y = "term frequency")
-word_plot
 
 ```
 
+Next, we explore if there are differences in the words that people from states with high and low obesity rates tweet. The graph of the log odds ratio of tweets from states with high obesity rate over states with low obesity rate reveals that people from states with high obesity rates are more likely to tweet highly extreme and negative words associated with obesity as compared to people from states with low obesity rate. This include words such as "risk", "disease" and "death". In comparison, people from states with low obesity rate tend to tweet content related to adoption of healthy lifestyles and diet as compared to people from states with high obesity rate. This include words like "read", "calorie" and "nutrient". This indicates that people from states with low obesity rates are more concerned with maintaining their health and weight as compared to people from states with high obesity rates. 
 ```{r}
 #Are there differences in words that ppl tweet?
 library(tidyr)
@@ -833,6 +773,7 @@ z
 
 ```
 
+Lastly, we visualized the network of bigrams in obesity related tweets. As expected, the network graph has two main clusters around "obesity" and "diet". The bigrams related to obesity are mostly negative words. Some bigrams reflects the rising obesity rate in the U.S., such as "obesity prevalence", "rampant obesity", and others reflect the diseases associated with obesity such as "childhood obesity", and "morbid obesity". The diet related words are more positive, and include bigrams related to physical exercise and maintaining a healthy body image. 
 ```{r}
 #bigram analysis
 tidy_obtweets_bigram <- obtweets_words %>% 
@@ -852,7 +793,7 @@ bigram_counts <- bigrams_filtered %>%
   count(word1, word2, sort = TRUE)
 bigram_counts<-bigram_counts%>%
   filter(!(word2=="https"))
-bigram_counts<-bigram_counts[c(-1, -12), ]
+bigram_counts<-bigram_counts[c(-1, -11), ]
 
 #visualize network of bigrams
 library(igraph)
