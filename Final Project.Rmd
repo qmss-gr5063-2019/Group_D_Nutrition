@@ -183,7 +183,7 @@ plot16 <- ggplot(data_ac,aes(x = reorder(LocationDesc,Data_Value),
 ggplotly(plot16)
 ```
 
-Vermont has the highest physical activity rate with the value 59.7%, while Purto Tico has the lowest with the value 19.6%
+Vermont has the highest physical activity rate with the value 59.7%, while Puerto Rico has the lowest with the value 19.6%
 
 ### Fast Food Restaurant
 
@@ -396,9 +396,6 @@ map4_1=leaflet(obmap)%>%
 
 ```
 
-
-However, in 2017, the situation has changed dramatically. Only one state left on the map has less than 25% obesity rate. The map is presented below.
-
 ```{r}
 ob17 <- data %>%
   filter(QuestionID == "Q036" & YearStart == 2017) %>%
@@ -452,7 +449,7 @@ By clustering the distribution of fastfood restaurants, we see that states with 
 
 ### Fastfood and Exercise
 
-The finding lead to our stronger interest in explore the fastfood restaurant with other behavior. We would like to explore fastfood restaurant distributio and physical activity of the state residents.
+The finding lead to our stronger interest in explore the fastfood restaurant with other behavior. We would like to explore fastfood restaurant distribution and physical activity of the state residents. In the following graphs, the fastfood restaurant are visualized as the orange dots on the map.
 
 ```{r}
 ac17 <- data %>%
