@@ -1,7 +1,7 @@
 ---
-title: "Final Project"
+title: "Obesity and Nutrition in the United States"
 author: "Cherie Yu, Qinyao Xia, Allison Jiang"
-date: "4/22/2019"
+date: "5/8/2019"
 output: html_document
 ---
 
@@ -43,27 +43,11 @@ data=read_csv("Nutrition__Physical_Activity__and_Obesity_-_Behavioral_Risk_Facto
 fastfood <- read_csv("FastFoodRestaurants.csv")
 
 states <- readOGR("shp/cb_2013_us_state_20m.shp",
-  layer = "cb_2013_us_state_20m", GDAL1_integer64_policy = TRUE)
+  layer = "cb_2013_us_state_20m", GDAL1_integer64_policy = TRUE, verbose = FALSE)
 ```
 
-# Obesity and Nutrition in the United States
 
-In this project, we aim to present a interactive display of obesity rates in adults across the different states in the U.S., and more pertinently, analyze how differences in the level of nutritional intake across the different states correlate with obesity rates. In addition, we also analyze the differences in the level of physical activities across the different states. Since it is widely known that one???s diet and physical exercises play a key role in affecting one???s weight and health, we believe that states with a widespread number of fast food outlets see greater occurrence of obesity as the presence of such unhealthy food options fuel adults living in these to adopt unhealthy diets, thereby neglecting their weight and health. In particular, our analysis consist of three major components:
-
-1. Obesity Rate
-2. Adult Nutrition and Physical Activities
-3. Fast Food Prevalence
-
-### Dataset
-1. CDC Nutrition, Physical Activity, and Obesity data
-2. Fast Food data
-3. Twitter API data
-
-### Obesity Rate
-
-=======
-
-In this project, we aim to present a interactive display of obesity rates in adults across the different states in the U.S., and more pertinently, analyze how differences in the level of nutritional intake across the different states correlate with obesity rates. In addition, we also analyze the differences in the level of physical activities across the different states. Since it is widely known that one???s diet and physical exercises play a key role in affecting one???s weight and health, we believe that states with a widespread number of fast food outlets see greater occurrence of obesity as the presence of such unhealthy food options fuel adults living in these to adopt unhealthy diets, thereby neglecting their weight and health. In particular, our analysis consist of three major components:
+In this project, we aim to present a interactive display of obesity rates in adults across the different states in the U.S., and more pertinently, analyze how differences in the level of nutritional intake across the different states correlate with obesity rates. In addition, we also analyze the differences in the level of physical activities across the different states. Since it is widely known that a person's diet and physical exercises play a key role in affecting one's weight and health, we believe that states with a widespread number of fast food outlets see greater occurrence of obesity as the presence of such unhealthy food options fuel adults living in these to adopt unhealthy diets, thereby neglecting their weight and health. In particular, our analysis consist of three major components:
 
 1. Obesity Rate
 2. Adult Nutrition and Physical Activities
@@ -168,7 +152,7 @@ plot10 <- ggplot(data_ob,aes(x = reorder(LocationDesc,Data_Value),
   geom_bar(stat = 'identity') +
   geom_label(aes(label = Data_Value)) +
   theme_minimal(8) +
-  labs(x = "State", y = "Obesity Rate",title = "States in the Percentage of Obesity in 2017") +
+  labs(x = "State", y = "Obesity Rate",title = "Percentage of Obesity Across States in 2017") +
   scale_fill_gradient(low = "#FFDAB9",high = "#1E90FF") +
   guides(fill = FALSE) +
   coord_flip()
@@ -199,7 +183,7 @@ plot16 <- ggplot(data_ac,aes(x = reorder(LocationDesc,Data_Value),
 ggplotly(plot16)
 ```
 
-Vermont has the highest physical activity rate with the value 59.7%, while Purto Tico has the lowest with the value 19.6%
+Vermont has the highest physical activity rate with the value 59.7%, while Puerto Rico has the lowest with the value 19.6%
 
 ### Fast Food Restaurant
 
@@ -412,9 +396,6 @@ map4_1=leaflet(obmap)%>%
 
 ```
 
-
-However, in 2017, the situation has changed dramatically. Only one state left on the map has less than 25% obesity rate. The map is presented below.
-
 ```{r}
 ob17 <- data %>%
   filter(QuestionID == "Q036" & YearStart == 2017) %>%
@@ -454,7 +435,7 @@ The grid shows the spread of obesity throughout the past 6 years. The red-shaded
 
 ### Obesity and Fastfood
 
-To further explore the relationship, we mapped the distribution of fastfood restaruant and State obesity level（2017）
+To further explore the relationship, we mapped the distribution of fastfood restaruant and State obesity level in 2017
 
 ```{r}
 pop <- paste("Name:",fastfood$name,"<br/>",
@@ -468,7 +449,7 @@ By clustering the distribution of fastfood restaurants, we see that states with 
 
 ### Fastfood and Exercise
 
-The finding lead to our stronger interest in explore the fastfood restaurant with other behavior. We would like to explore fastfood restaurant distributio and physical activity of the state residents.
+The finding lead to our stronger interest in explore the fastfood restaurant with other behavior. We would like to explore fastfood restaurant distribution and physical activity of the state residents. In the following graphs, the fastfood restaurant are visualized as the orange dots on the map.
 
 ```{r}
 ac17 <- data %>%
@@ -539,10 +520,10 @@ map8
 
 ```
 
-The vegetable intake graph shows the upper northern states have less than 15% people eating less veggie than once daily. All east coast except New York have only 15-20% resident eating less than once veggie. Whereas the south west US is has around 25-30% people eating vegetable less than once daily. Interestingly, Puerto Rico has more than 35% people eating vegetable less than one a day. Alaska on the other hand, is blue-shaded with 19% people eating veggie less than once/day.
+The vegetable intake graph shows the upper northern states have less than 15 percent people eating less veggie than once daily. All east coast except New York have only 15-20 percent resident eating less than once veggie. Whereas the south west US is has around 25-30 percent people eating vegetable less than once daily. Interestingly, Puerto Rico has more than 35 percent people eating vegetable less than one a day. Alaska on the other hand, is blue-shaded with 19 percemt people eating veggie less than once every day.
 
 ###Text Analysis
-We collected text data from twitter related to fastfood, obesity and diet that is relevant to our project. 
+We collected text data from twitter related to keywords like "fastfood", "obesity" and "diet" that is relevant to our project. Since "obesity" has negative connation, querying for the term "obesity" might have skewed our results to be more negative.  
 
 ```{r}
 #Text Data
@@ -601,7 +582,7 @@ colnames(fftweets_full)[89]<-"place_abbr"
 
 The barchart indicates that states like Texas, South Carolina, Montana and California tweet positively about fastfood, while states like Arizona, Colorado and Michigan tweet negatively about fastfood. 
 
-The plot of fastfood related words with the highest frequency are words related to actual food sold in fastfood chains, such as "taco", "whooper" and "sandwich". This supports the previous finding that the most popular fastfood chains in the U.S. are Burger King and Taco Bell. 
+The plot of fastfood related words with the highest frequency are words related to actual food sold in fastfood chains, such as "taco", "whooper" and "sandwich". This supports the previous finding that some of the most popular fastfood chains in the U.S. are Burger King and Taco Bell. In addition, some of the words such as Whopper(R) seem to be coming from tweets by restaurants themselves, and it could be that the states with positive sentiments towards fastfoood are merely being targeted by food advertising more. 
 
 ```{r}
 #sentiment analysis of fastfood text 
@@ -667,7 +648,8 @@ fastfood_word
 ```
 
 For tweets related to obesity and diet, the word cloud shows words related to health (such as workout, body and weight), diet (such as vegan, coke and keto) and obesity related diseases such as diabetes. This suggests that people who talk about obesity and diet related topics are generally concerned about obesity and seek to improve their lifestyle and diets as obesity prevention efforts. 
-The two scatterplots plot the relationship between obesity rate of each of the U.S. state and the overall sentiment of the twitter text related to obesity. One would assume a positive relationship between obesity rate and sentiment towards obesity, such that states with higher occurrence of obesity have tweets that display a more positive sentiment towards obesity. The two lexicon classifications we used are AFINN and Bing. From the plots, we do not see a clear linear relationship between obesity rate and text sentiment. Instead, both plot suggests a quadratic relationship between obesity rate and text sentiment, such that states with the highest obesity rates display the more extreme sentiments, both positive and negative, toward obesity, as compared to states with low obesity rates. 
+
+The scatterplot plot the relationship between obesity rate of each of the U.S. state and the overall sentiment of the twitter text related to obesity. One would assume a positive relationship between obesity rate and sentiment towards obesity, such that states with higher occurrence of obesity have tweets that display a more positive sentiment towards obesity. The lexicon classifications we used is  Bing. From the plot, we do not see a clear linear relationship between obesity rate and text sentiment. Instead, the plot suggests a quadratic relationship between obesity rate and text sentiment, such that states with the highest obesity rates display the more extreme sentiments, both positive and negative, toward obesity, as compared to states with low obesity rates. 
 
 The second wordcloud shows all the negative words related to obesity and diet related tweets. It seems to be that people who tweet about obesity and diet are most concerned with the adverse health complications associated with obesity. The words with the highest frequencies include kill, risk, death and cancer etc which are all extremely negative words related to health issues due to obesity.
 
@@ -694,6 +676,10 @@ tidyobtwets3<-tidyobtwets3%>%
   select(id, word)
 obtweets_count<-tidyobtwets3%>%
   count(word)
+not_diet<-c("santa", "clarita", "netflix", "@netflix", "@scdiet")
+not_diet<-as.vector(not_diet)
+obtweets_count<-obtweets_count%>%
+  filter(!word%in%not_diet)
 
 #wordcloud
 set.seed(2103)
@@ -703,25 +689,11 @@ wordcloud(words = obtweets_count$word, freq = obtweets_count$n,
 obtweets_count_state<-tidyobtwets3%>%
   count(id, word)
 
-obesity_sentiments_afinn <- obtweets_count_state %>%
-  inner_join(get_sentiments("afinn"), by = "word") %>%
-  group_by(id) %>%
-  summarize(score = sum(score * n) / sum(n))
-
 library(readxl)
 obesity_rate<-read_excel("obesity_data.xlsx")
 obesity_rate<-obesity_rate[, -1]
 
 colnames(obesity_rate)[3]<-"id"
-combined_df<-inner_join(obesity_sentiments_afinn, obesity_rate, by="id")
-
-obesity_sentiments_afinn<-obesity_sentiments_afinn[c(-8, -31, -34, -38), ]
-
-scatterplot<-ggplot(combined_df, aes(x=score, y=I(Percent*100)))+
-  geom_point()+
-  geom_smooth()+
-  labs(y="Obesity Rate (2017)", x="Sentiment Score (AFINN)", title="Relationship Between Sentiment Towards Obesity and Obesity Rate")
-scatterplot
 
 
 ob_sentiments_bing <- obtweets_count_state %>%
@@ -733,11 +705,11 @@ ob_sentiments_bing <- obtweets_count_state %>%
   mutate(polarity=(positive-negative)/(positive+negative))
 ob_sentiments_bing<-ob_sentiments_bing[c(-7, -30, -33, -36), ]
 combined_df2<-inner_join(ob_sentiments_bing, obesity_rate, by="id")
-plot<-ggplot(combined_df2, aes(x=polarity, y=I(Percent*100)))+
+plot<-ggplot(combined_df2, aes(x=polarity, y=I(Percent*100), label=State))+
   geom_point(size=2)+
   geom_smooth()+
   labs(y="Obesity Rate (2017)", x="Sentiment Score (Bing)", title="Relationship Between Sentiment Towards Obesity and Obesity Rate")
-plot
+ggplotly(plot)
 
 ob_sentiments_bing2<- obtweets_count_state %>%
   inner_join(get_sentiments("bing"), by = "word")%>%
@@ -788,6 +760,7 @@ word_plot<-ggplot(obcount_combined, aes(x=reorder(word, n), y=n, fill=cat))+
 ```
 
 Next, we explore if there are differences in the words that people from states with high and low obesity rates tweet. The graph of the log odds ratio of tweets from states with high obesity rate over states with low obesity rate reveals that people from states with high obesity rates are more likely to tweet highly extreme and negative words associated with obesity as compared to people from states with low obesity rate. This include words such as "risk", "disease" and "death". In comparison, people from states with low obesity rate tend to tweet content related to adoption of healthy lifestyles and diet as compared to people from states with high obesity rate. This include words like "read", "calorie" and "nutrient". This indicates that people from states with low obesity rates are more concerned with maintaining their health and weight as compared to people from states with high obesity rates. 
+
 ```{r}
 #Are there differences in words that ppl tweet?
 library(tidyr)
@@ -846,7 +819,15 @@ bigrams_filtered <- bigrams_separated %>%
 bigram_counts <- bigrams_filtered %>% 
   count(word1, word2, sort = TRUE)
 bigram_counts<-bigram_counts%>%
-  filter(!(word2=="https"))
+  filter(!(word2=="https"))%>%
+  filter(!(word2=="clarita"))%>%
+  filter(!(word2=="netflix"))%>%
+  filter(!(word1=="clarita"))%>%
+  filter(!(word1=="netflix"))%>%
+  filter(!(word1=="santa"))%>%
+  filter(!(word1=="season"))%>%
+  filter(!(word1=="t.co"))%>%
+  filter(!(word1=="scdiet"))
 bigram_counts<-bigram_counts[c(-1, -11), ]
 
 #visualize network of bigrams
@@ -862,7 +843,7 @@ ggraph(bigram_graph, layout = "fr") +
   geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
                  arrow = a, end_cap = circle(.07, 'inches')) +
   geom_node_point(color = "lightblue", size = 4) +
-  geom_node_text(aes(label = name), vjust = 1, hjust = 1, size=4) +
+  geom_node_text(aes(label = name), vjust = 1, hjust = 1, size=4, check_overlap=TRUE, position="identity") +
   theme_void()+
   labs(title="Network of Bigrams in Obesity Related Tweets")
 
